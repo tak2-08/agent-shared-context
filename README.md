@@ -10,14 +10,14 @@
 | 시나리오 | 전체 읽기 | 이 프로젝트 사용 | 절약 | 히트율 |
 |---|---|---|---|---|
 | 검색 5개 | 5,280 tok | 1,040 tok | **80%** | 80% |
-| 검색 50개 | 25,580 tok | 1,758 tok | **93%** | 85% |
+| 검색 50개 | 25,580 tok | ~1,760 tok | **~94%** | 85% |
 | 검색 500개 | 194,800 tok | 2,003 tok | **99%** | 85% |
-| **세션 복원** 500개 | 191,825 tok (재독입) | **3,460 tok** (핸드오프) | **98%**, 손실 0 | — |
+| **세션 복원** 500개 | 191,825 tok (재독입) | **3,460 tok** (핸드오프) | **98%**, 구조적 손실 0* | — |
 
-*세션 복원: 압축(compaction) 없이 `CURRENT.md` + 핸드오프 포인터 번들로 새 세션이 ~600 tok 만에 기존 작업을 이어받음. 상세는 `docs/session-continuity.md`.*
+*세션 복원: 압축 없이 포인터 번들로 복원. \*구조적 손실 0 — 단, entry로 저장한 것만 보장됨. 저장하지 않은 논의는 사라짐(저장 성실성이 전제).*
 
 - **에이전트 간 공유**: 모든 AI 에이전트가 `git pull` 하나로 동일한 `agent-context/`를 읽고 쓴다 — `agent-to-agent` 컨텍스트 브리지
-- **3단계 점진 공개 + 계층**: L1 `index.json` → L2 `graph.json`/`features.json` → L3 `*.md` 1~2개, 가벼운 AI가 `post-it`(15tok)→`library`(5000tok) 중 시작점 자동 결정
+- **3단계 점진 공개 + 계층**: L1 `index.json` → L2 `graph.json`/`features.json` → L3 `*.md` 1~2개, 규칙 기반 휴리스틱 라우터(LLM 호출 0)가 `post-it`(15tok)→`library`(5000tok) 중 시작점 자동 결정 — "가벼운 AI"는 휴리스틱을 의미
 - **서브에이전트 불필요**: 모든 도구가 단일 Bash 호출 — 메인 에이전트가 직접 검색, Node 없으면 순수 Grep/Read 폴백까지 동작
 - **Git이 곧 DB**: PR 리뷰·`git blame` 가능, 모든 agent가 `git pull`로 동기화
 - **학습 루프**: `learnings`의 `cause/fix/lesson`으로 실패 반복 방지
@@ -25,6 +25,17 @@
 ## ✍️ Made by
 
 **Muse Spark 1.2 Agent** (`opencode/muse-spark-1.2-contributor-free`, Meta Muse Spark via OpenCode) — 설계·구현·벤치마크·후기(`REVIEW.md`) 전부 이 에이전트가 직접 수행. 환경 상세는 `AGENT.md` `docs/agent-environment.md`.
+
+## Architecture (4 layers — 경계 명시)
+
+| Layer | 책임 | 위치 |
+|---|---|---|
+| **Context Store** | 기억의 정본 저장 | `agent-context/*.md` + `index/graph/features.json` |
+| **Retrieval** | 계층적 검색·레벨 배정 | `tools/agent-search-lite.mjs` + `agent-context-index.mjs` |
+| **Handoff** | 세션 연속성 | `tools/agent-handoff.mjs` + `CURRENT.md` + `sessions/handoff/` |
+| **Coordination** | 실시간 협업 상태 (지식 아님) | `tools/agent-sessions/radio.mjs` + `sessions/inbox/` + `radio/threads/` |
+
+Coordination은 지식을 만들지 않는다 — live 메시지는 로컬에서 소비되고, 지식화 가치가 있을 때만 entry→PR로 승격된다. 이 경계를 지키는 것이 기능 팽창 방지의 핵심이다.
 
 ## 빠른 시작
 
@@ -240,6 +251,8 @@ cp -r skills/agent-shared-context ~/.codex/skills/
 | /ac-issue / /ac-learning / /ac-idea ... | `node tools/ac.mjs <type> --title "..." [--refs "p1,p2"]` |
 
 **결과 중심 기록 원칙**: 도구 호출 로그 저장 금지 — 결론 + refs(검증 링크)만. 토큰 낭비 제거.
+
+**자동 관찰(v0.5)**: `node tools/ac-watch.mjs` — git 이력에서 학습 후보를 자동 생성(.candidates/, proposed). 승격 전까지 비확정으로 오염 방지. `ROADMAP.md` 참조.
 
 ## 검증
 

@@ -33,7 +33,7 @@ node tools/agent-handoff.mjs save \
 - `sessions/handoff/<date>--<session>.md` 생성 (task/done/key pointers/next)
 - `agent-context/CURRENT.md` 포인터 갱신 (~50 tok) — **새 세션의 첫 Read**
 
-### 3) 새 세션 복원 — ~600 tok, 손실 0
+### 3) 새 세션 복원 — ~600 tok, 구조적 손실 0
 
 ```bash
 Read agent-context/CURRENT.md                 # ~50 tok
@@ -43,6 +43,8 @@ Read <검색된 1~2 md>                           # 온디맨드
 ```
 
 전체 히스토리 재독입도, 압축 요약 의존도 없음. 벤치마크: 500개 기준 full re-read 대비 **98.2% 절약**, 구조적 손실 0 (`BENCHMARK.md` Session resume 섹션).
+
+> **정직한 한계**: "손실 0"은 *entry로 저장한 것*에 한함. 저장하지 않은 논의는 사라진다 — 손실 방지는 에이전트가 작업 중 entry를 성실히 남기는 데 의존한다. 이것이 이 설계의 전제다.
 
 ## 서브에이전트·AI 배정 없이 동작 (메인 에이전트 직접 검색)
 

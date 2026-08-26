@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-08-26T11:25:17.405Z",
+  "generated_at": "2026-08-26T11:58:03.544Z",
   "_path": "agent-context/graph.json",
   "description": "기능 연관 그래프 — depends_on/affects로 영향 범위 추적. agent-context.config.json graph.edges로부터 생성됨.",
   "graph": {

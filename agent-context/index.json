@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-08-26T11:25:17.401Z",
+  "generated_at": "2026-08-26T11:58:03.541Z",
   "generated_by": "agent-context-index.mjs",
   "_path": "agent-context/index.json",
   "description": "L1 압축 카탈로그 — 저용량 에이전트가 가장 먼저 읽는 파일. preview 60자 + summary 120자로 본문 Read 없이 관련성 판단.",
@@ -8,15 +8,62 @@
     "soft_limit_chars": 200000,
     "max_entries": 1000,
     "should_compress": false,
-    "total_chars": 1509,
-    "total_entries": 2
+    "total_chars": 1953,
+    "total_entries": 3
   },
   "counts": {
+    "note": 1,
+    "learning": 1,
     "handoff": 1,
-    "issue": 1,
-    "total": 2
+    "total": 3
   },
   "entries": [
+    {
+      "id": "note-20260826-39b7749c",
+      "type": "note",
+      "level": "post-it",
+      "title": "API moved",
+      "tags": [
+        "note",
+        "api"
+      ],
+      "feature": "api",
+      "scope": "global",
+      "agent": "claude",
+      "created": "2026-08-26T11:52:10.157Z",
+      "updated": "2026-08-26T11:52:10.157Z",
+      "status": "done",
+      "priority": 5,
+      "summary": "API moved to /v2/items",
+      "preview": "API moved to /v2/items",
+      "path": "notes/2026-08-26-api-moved--claude.md",
+      "related": [],
+      "affects": [],
+      "chars": 407
+    },
+    {
+      "id": "learning-20260826-aaa11111",
+      "type": "learning",
+      "level": "memo",
+      "title": "JWT race condition",
+      "tags": [
+        "auth",
+        "jwt"
+      ],
+      "feature": "auth",
+      "scope": "global",
+      "agent": "claude",
+      "created": "2026-08-26T11:00:26.279Z",
+      "updated": "2026-08-26T11:00:26.280Z",
+      "status": "done",
+      "priority": 5,
+      "summary": "JWT refresh race → mutex 해결. 검증: src/auth/refresh.ts:42",
+      "preview": "JWT refresh race → mutex 해결. 검증: src/auth/refresh.ts:42",
+      "path": "learnings/2026-08-26-jwt-race--claude.md",
+      "related": [],
+      "affects": [],
+      "chars": 429
+    },
     {
       "id": "handoff-20260826-khd31lw6",
       "type": "handoff",
@@ -39,28 +86,15 @@
       "related": [],
       "affects": [],
       "chars": 1117
-    },
-    {
-      "id": "issue-20260826-b48a3b55",
-      "type": "issue",
-      "level": "diary",
-      "title": "login 500 on refresh",
-      "tags": [
-        "issue"
-      ],
-      "feature": "auth",
-      "scope": "global",
-      "agent": "system",
-      "created": "2026-08-26T11:23:08.632Z",
-      "updated": "2026-08-26T11:23:08.632Z",
-      "status": "done",
-      "priority": 4,
-      "summary": "login 500 on refresh",
-      "preview": "login 500 on refresh",
-      "path": "bugs/2026-08-26-login-500-on-refresh--system.md",
-      "related": [],
-      "affects": [],
-      "chars": 392
     }
-  ]
+  ],
+  "knowledge": {
+    "note": "related[]에서 유추한 인과 엣지 — bug↔learning, decision supersedes 등. graph.json(feature)과 별개의 지식 그래프.",
+    "edges": []
+  },
+  "stale": {
+    "threshold_days": 90,
+    "count": 0,
+    "items": []
+  }
 }

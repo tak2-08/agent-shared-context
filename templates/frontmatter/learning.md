@@ -10,6 +10,8 @@ agent: claude
 created: 2026-08-27T10:00:00+09:00
 updated: 2026-08-27T10:00:00+09:00
 status: done
+epistemic: verified        # observed|inferred|hypothesis|verified|deprecated — 기억 신뢰도
+source: "src/auth/refresh.ts:42"
 priority: 5
 summary: "refresh를 mutex 없이 병렬 호출하면 두 번째 토큰이 첫 번째를 덮어 로그아웃됨"
 related: [decisions/0001-use-file-db.md, bugs/2026-08-27-refresh-race--codex.md]

@@ -105,6 +105,17 @@ node tools/agent-search-lite.mjs "<query>"
 ✅ "JWT race → 전역 mutex 해결. 검증: src/auth/refresh.ts:42"
 ```
 
+## Auto-observability & FTS (v0.5.0)
+
+| 별칭 | 명령 | 동작 |
+|---|---|---|
+| /ac-watch | `node tools/ac-watch.mjs --since "1 day ago"` | git 이력에서 학습 후보 자동 감지 → .candidates/ (승격 전까지 비확정) |
+| /ac-promote | `node tools/ac-watch.mjs promote <file>` | 후보를 정식 디렉터리로 승격 |
+| /ac-fts | `node tools/ac-fts.mjs build/query/status` | SQLite FTS 백엔드 (Node ≥22.5 내장, 0 npm install) |
+| /ac-tasks | `node tools/benchmark-task.mjs` | 검색→정답 도달 과업 성공률 측정 |
+
+자동 관찰은 **후보만** 만든다 — 결론은 에이전트가 채워 넣어야 오염이 없다. 상세: `ROADMAP.md` `docs/session-continuity.md`.
+
 ## References
 
 - Concepts from `Coral-Protocol/AgentRadio` (Apache 2.0) and contemporary session collaboration patterns — file-based adaptation. See `docs/radio.md` `docs/sessions.md` `docs/hierarchy.md` `REFERENCES.md`.

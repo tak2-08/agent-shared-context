@@ -50,7 +50,7 @@
 
 ## 구현
 
-- **저장**: `tools/agent-search-lite.mjs --assign` 또는 `tools/agent-context-index.mjs`가 `index.json` 재생성 시 `level` 자동 계산 (길이 기반, 0 LLM 호출)
+- **저장**: `--assign`만 쓰면 레벨 계산·출력일 뿐 파일 생성 없음. 실제 저장은 `--assign --save --title "T" --content "결론..." --type issue --feature auth` — entry 생성 + index 즉시 재생성까지 한 번에 (external review에서 발견된 문서-동작 불일치 수정)
 - **검색**: `node tools/agent-search-lite.mjs "query" --level post-it --limit 3` — 가벼운 AI가 `--level`을 자동 결정하면 생략 가능
 - **호환**: 기존 `note/memo/...` 9타입은 `level` 없이도 동작 — `level`이 없으면 `chars`로 추정해 하위호환
 
