@@ -117,6 +117,33 @@ node tools/agent-context-validate.mjs
 node tools/benchmark.mjs                # synthetic 5/50/500, writes BENCHMARK.md
 ```
 
+## Commands (슬래시 별칭 → 단일 Bash 호출)
+
+스킬 커맨드는 `node tools/ac.mjs` 디스패처 하나로 통합 — 서브에이전트 불필요, 메인 에이전트가 직접 실행.
+
+| 슬래시 별칭 | 실제 명령 | 동작 |
+|---|---|---|
+| `/ac-export` | `node tools/ac.mjs export --session S --task "..." --done "a;b" --next "c"` | 세션 내보내기 (핸드오프 저장 + CURRENT.md 갱신) |
+| `/ac-import` | `node tools/ac.mjs import [file]` | 세션 불러오기 (복원 브리프 ~280 tok) |
+| `/ac-current` | `node tools/ac.mjs current` | 현재 포인터 보기 |
+| `/ac-history` | `node tools/ac.mjs history "query" --limit 3` | 히스토리·지식 검색 (계층, 0 LLM) |
+| `/ac-issue` | `node tools/ac.mjs issue --title "..." [--feature F] [--refs "p1,p2"]` | 이슈 작성 |
+| `/ac-learning` | `node tools/ac.mjs learning --title "..." --cause C --fix F2 --lesson L` | 교훈 기록 |
+| `/ac-idea` | `node tools/ac.mjs idea --title "..."` | 아이디어 기록 |
+| `/ac-note` / `/ac-todo` / `/ac-decision` | `node tools/ac.mjs note|todo|decision --title "..."` | 기타 타입 기록 |
+
+## 결과 중심 기록 (원칙)
+
+기록에는 **도구 호출 로그를 남기지 않는다**. 도구 사용 과정·출력 전문은 토큰 낭비:
+
+```
+❌ "Grep으로 검색하고 Read로 3개 읽었더니..."
+✅ "JWT race → 전역 mutex 해결. 검증: src/auth/refresh.ts:42"
+```
+
+- 결론 + `refs`(검증 링크)만 저장. 다음 에이전트는 결론을 쓰거나 refs로 직접 확인
+- 버그는 `repro`에 재현 레시피만 (이것도 과정 로그가 아니라 레시피)
+
 ## References
 
 - Concepts from `Coral-Protocol/AgentRadio` (Apache 2.0) and contemporary session collaboration patterns — file-based adaptation. See `docs/radio.md` `docs/sessions.md` `docs/hierarchy.md` `REFERENCES.md`.
