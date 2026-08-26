@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "_path": "agent-context/sessions/config.json",
+  "description": "Inbound policy — reverse-engineered from Claude Code crossSessionInbound / isolatePeerMachines. Controls how this machine's sessions handle incoming peer messages.",
+  "crossSessionInbound": "accept",
+  "isolatePeerMachines": false,
+  "policies": {
+    "accept": "deliver immediately between tool calls, or start new turn if idle",
+    "hold": "hold for approval (approval dialog, 5min expiry, max 100 held, oldest dropped)",
+    "refuse": "drop inbound without delivery, still binds inbox file"
+  },
+  "rateLimit": {
+    "maxPerSender": 10,
+    "dedupWindowMs": 5000,
+    "identicalDrop": true,
+    "maxInbox": 50
+  },
+  "plainTextOnly": true,
+  "socketType": "file",
+  "note": "Same-machine file inbox never traverses Anthropic servers; cross-machine via git push would traverse git remote. File inbox is per-session JSONL at sessions/inbox/<session>.jsonl, bound similarly to CLAUDE_CODE_MESSAGING_SOCKET."
+}
