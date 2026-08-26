@@ -34,6 +34,8 @@ jobs:
           node --check tools/agent-radio.mjs
           node tools/agent-radio.mjs list-threads
           node tools/agent-radio.mjs protocol
+      - name: E2E workflow (init→write→validate→search→handoff)
+        run: node tools/e2e-workflow.mjs
       - name: Skill check
         run: |
           test -f .claude/skills/agent-shared-context/SKILL.md

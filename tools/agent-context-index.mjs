@@ -211,8 +211,10 @@ if (ARGS.init) {
     required: CONFIG.schema?.required || ["id","type","title","tags","feature","agent","created","updated","status","summary"],
     properties: {
       ...(schema.properties || {}),
-      type: { type: "string", enum: types },
-      feature: { type: "string", enum: featureEnum, description: "graph.json/features.json 키와 연결" },
+      type: CONFIG.typesFluid === false
+        ? { type: "string", enum: types }
+        : { type: "string", pattern: "^[a-z0-9-]+$", description: "유동적 타입 — 자유 문자열 (typesFluid)" },
+      feature: { type: "string", pattern: "^[a-z0-9-_]+$", description: "유동적 feature — graph/features 키와 연결, 자유 확장" },
       agent: { type: "string", enum: agents },
     },
   };
@@ -225,10 +227,10 @@ if (ARGS.init) {
     // minimal fallback
     expectedSchema.properties = {
       id: { type: "string", pattern: CONFIG.schema?.idPattern || "^[a-z-]+-[0-9]{8}-[a-z0-9]{8}$" },
-      type: { type: "string", enum: types },
+      type: CONFIG.typesFluid === false ? { type: "string", enum: types } : { type: "string", pattern: "^[a-z0-9-]+$" },
       title: { type: "string", minLength: 5, maxLength: 80 },
       tags: { type: "array", items: { type: "string", pattern: "^[a-z0-9-]+$" }, minItems: 1, maxItems: 8 },
-      feature: { type: "string", enum: featureEnum },
+      feature: { type: "string", pattern: "^[a-z0-9-_]+$" },
       scope: { type: "string", pattern: "^(global|page|custom:.+)$", default: "global" },
       agent: { type: "string", enum: agents },
       created: { type: "string", format: "date-time" },

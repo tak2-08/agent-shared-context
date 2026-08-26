@@ -1,9 +1,8 @@
 <!-- Path: BENCHMARK.md -->
 # Benchmark — Hierarchical Lightweight Search vs Full Read
 
-> **Objective, public-standard-like, critical, reproducible** — synthetic 5/50/500 scale, 20 queries, **fixed seed (--seed 42)**, tokens = chars/4, hit = query tokens in title/tags/summary, latency = search vs est. full Read, no LLM.
->
-> **Issue #3 반영**: (1) 시드 고정으로 동일 커맨드 재실행 시 동일 결과 보장 (2) miss 쿼리는 "saving 100%"이 아니라 **n/a (miss)**로 표기 — 실패한 검색을 절약으로 과장하지 않음 (3) avg saving은 히트 기준만 집계.
+> **Objective, public-standard-like, critical, reproducible** — synthetic 5/50/500 scale, 20 queries, tokens = chars/4, hit = query tokens in title/tags/summary, latency = search vs est. full Read, no LLM.
+
 ## Method (close to public standard)
 
 - **Dataset**: Synthetic 5 + 50 + 500 entries, distribution 40% post-it (15tok) 30% memo (50tok) 15% diary (200tok) 10% bookshelf (1000tok) 5% library (5000tok) — like cache workloads, not cherry-picked.
@@ -17,9 +16,9 @@
 
 | scale | full tokens | avg top 3 tokens | avg saving | hitRate | avg latency (search) | est. full Read latency | tokens/hit |
 |---|---|---|---|---|---|---|
-| 5 | 1315 | 178 | 83.1% | 80.0% | 0.09ms | 0.25ms (est. Read all md) | 223 |
-| 50 | 16780 | 761 | 94.7% | 85.0% | 0.37ms | 2.50ms (est. Read all md) | 895 |
-| 500 | 197940 | 1883 | 98.9% | 85.0% | 1.92ms | 25.00ms (est. Read all md) | 2216 |
+| 5 | 1315 | 178 | 83.1% | 80.0% | 0.16ms | 0.25ms (est. Read all md) | 223 |
+| 50 | 16780 | 761 | 94.7% | 85.0% | 0.41ms | 2.50ms (est. Read all md) | 895 |
+| 500 | 197940 | 1883 | 98.9% | 85.0% | 2.34ms | 25.00ms (est. Read all md) | 2216 |
 
 ### Interpretation (critical, not hype)
 
@@ -31,11 +30,11 @@
 
 | query | assignedLevel | top tokens | saving | hit | latency |
 |---|---|---|---|---|
-| auth | post-it | 45 | 99.7% | ✅ | 1.31ms |
-| api | post-it | 80 | 99.5% | ✅ | 0.36ms |
-| jwt | post-it | 0 | n/a (miss) | ❌ | 0.31ms |
-| pagination | post-it | 0 | n/a (miss) | ❌ | 0.31ms |
-| cache | post-it | 0 | n/a (miss) | ❌ | 0.31ms |
+| auth | post-it | 45 | 99.7% | ✅ | 0.39ms |
+| api | post-it | 80 | 99.5% | ✅ | 0.33ms |
+| jwt | post-it | 0 | n/a (miss) | ❌ | 0.89ms |
+| pagination | post-it | 0 | n/a (miss) | ❌ | 1.56ms |
+| cache | post-it | 0 | n/a (miss) | ❌ | 0.64ms |
 
 ### What we learned while benchmarking (ideas & shortcomings →补)
 
@@ -66,7 +65,7 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
     "avgTopTokens": 178,
     "avgSaving": "83.1%",
     "hitRate": "80.0%",
-    "avgLatency": "0.09ms",
+    "avgLatency": "0.16ms",
     "fullLatencyEst": "0.25ms (est. Read all md)",
     "tokensPerHit": 223,
     "perQuery": [
@@ -76,7 +75,7 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 50,
         "saving": "96.2%",
         "hit": true,
-        "latency": "0.48ms"
+        "latency": "0.65ms"
       },
       {
         "query": "api",
@@ -84,7 +83,7 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 15,
         "saving": "98.9%",
         "hit": true,
-        "latency": "0.22ms"
+        "latency": "0.25ms"
       },
       {
         "query": "jwt",
@@ -92,7 +91,7 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 0,
         "saving": "n/a (miss)",
         "hit": false,
-        "latency": "0.07ms"
+        "latency": "0.16ms"
       },
       {
         "query": "pagination",
@@ -100,7 +99,7 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 0,
         "saving": "n/a (miss)",
         "hit": false,
-        "latency": "0.05ms"
+        "latency": "0.13ms"
       },
       {
         "query": "cache",
@@ -108,7 +107,7 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 0,
         "saving": "n/a (miss)",
         "hit": false,
-        "latency": "0.04ms"
+        "latency": "0.35ms"
       }
     ]
   },
@@ -120,7 +119,7 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
     "avgTopTokens": 761,
     "avgSaving": "94.7%",
     "hitRate": "85.0%",
-    "avgLatency": "0.37ms",
+    "avgLatency": "0.41ms",
     "fullLatencyEst": "2.50ms (est. Read all md)",
     "tokensPerHit": 895,
     "perQuery": [
@@ -130,7 +129,7 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 45,
         "saving": "99.7%",
         "hit": true,
-        "latency": "1.31ms"
+        "latency": "0.39ms"
       },
       {
         "query": "api",
@@ -138,7 +137,7 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 80,
         "saving": "99.5%",
         "hit": true,
-        "latency": "0.36ms"
+        "latency": "0.33ms"
       },
       {
         "query": "jwt",
@@ -146,7 +145,7 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 0,
         "saving": "n/a (miss)",
         "hit": false,
-        "latency": "0.31ms"
+        "latency": "0.89ms"
       },
       {
         "query": "pagination",
@@ -154,7 +153,7 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 0,
         "saving": "n/a (miss)",
         "hit": false,
-        "latency": "0.31ms"
+        "latency": "1.56ms"
       },
       {
         "query": "cache",
@@ -162,7 +161,7 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 0,
         "saving": "n/a (miss)",
         "hit": false,
-        "latency": "0.31ms"
+        "latency": "0.64ms"
       }
     ]
   },
@@ -174,7 +173,7 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
     "avgTopTokens": 1883,
     "avgSaving": "98.9%",
     "hitRate": "85.0%",
-    "avgLatency": "1.92ms",
+    "avgLatency": "2.34ms",
     "fullLatencyEst": "25.00ms (est. Read all md)",
     "tokensPerHit": 2216,
     "perQuery": [
@@ -182,17 +181,17 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "query": "auth",
         "assignedLevel": "post-it",
         "topTokens": 45,
-        "saving": "100.0%",
+        "saving": "99.9%+",
         "hit": true,
-        "latency": "4.01ms"
+        "latency": "3.82ms"
       },
       {
         "query": "api",
         "assignedLevel": "post-it",
         "topTokens": 45,
-        "saving": "100.0%",
+        "saving": "99.9%+",
         "hit": true,
-        "latency": "2.09ms"
+        "latency": "1.83ms"
       },
       {
         "query": "jwt",
@@ -200,7 +199,7 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 0,
         "saving": "n/a (miss)",
         "hit": false,
-        "latency": "2.05ms"
+        "latency": "6.05ms"
       },
       {
         "query": "pagination",
@@ -208,7 +207,7 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 0,
         "saving": "n/a (miss)",
         "hit": false,
-        "latency": "2.48ms"
+        "latency": "4.64ms"
       },
       {
         "query": "cache",
@@ -216,7 +215,7 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 0,
         "saving": "n/a (miss)",
         "hit": false,
-        "latency": "1.93ms"
+        "latency": "4.53ms"
       }
     ]
   }

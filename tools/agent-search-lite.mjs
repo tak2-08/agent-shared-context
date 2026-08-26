@@ -130,16 +130,23 @@ function search(query, opts={}) {
   const totalTokens = top.reduce((sum,s)=>sum+s.estTokens,0);
   const wouldBeFullRead = entries.reduce((sum,e)=>sum+(LEVELS[estimateLevel(e)]?.tokens||200),0);
   const saving = wouldBeFullRead ? ((wouldBeFullRead-totalTokens)/wouldBeFullRead*100).toFixed(1) : 0;
+  const hit = top.length > 0;
+  // nemotron 지적 반영: miss는 'n/a (miss)', 99.95% 이상은 '99.9%+' 표기로 착시 제거
+  const hitNum = parseFloat(saving);
+  const savingStr = !hit ? 'n/a (miss)' : (hitNum >= 99.95 ? '99.9%+' : `${saving}%`);
   return {
     query,
     assignedLevel: requestedLevel,
+    router: { type: 'rule-based heuristic', noLLM: true, zeroTokens: true, reason: `query ${qTokens.length} words → ${requestedLevel}` },
     lightweightAI: { reason: `query ${qTokens.length} words → ${requestedLevel} (hierarchical cache)`, noLLM: true, zeroTokens: true },
     order: ORDER,
     totalEntries: entries.length,
     evaluated: scored.length,
+    hit,
+    expandedTo: hit ? null : null,
     top: top.map(s=>({ id:s.entry.id, title:s.entry.title, level:s.lev, feature:s.entry.feature, priority:s.entry.priority, score: s.score.toFixed(2), estTokens:s.estTokens, path:s.entry.path, summary:s.entry.summary })),
-    tokens: { top: totalTokens, full: wouldBeFullRead, saving: `${saving}%`, avgPerQuery: top.length? Math.round(totalTokens/top.length):0 },
-    note: `Hierarchical: ${ORDER.slice(0, startRank+1).join('→')} first, expand to larger only if no hit — like cache→HBM→DRAM→SSD→library`
+    tokens: { top: totalTokens, full: wouldBeFullRead, saving: savingStr, avgPerQuery: top.length? Math.round(totalTokens/top.length):0 },
+    note: `Hierarchical: ${ORDER.slice(0, startRank+1).join('→')} first, miss expands to larger levels — cache metaphor`
   };
 }
 
