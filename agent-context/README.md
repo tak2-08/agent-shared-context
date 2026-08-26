@@ -80,3 +80,12 @@ keywords:
 ```
 
 참조: `agent-context.config.json`, `tools/agent-context-index.mjs`, `docs/protocol.md`
+
+---
+
+## Agent (이 템플릿을 만든 주체)
+
+- **Model**: `muse-spark-1.2-contributor-free` (Meta Muse Spark)
+- **Environment**: `OpenCode` `linux` `bash`, repo `tak2-08/agent-shared-context` (구 `agent-context`, 2026-08-26 개명 — 에이전트 간 공유 명시)
+- **생성**: 2026-08-27, `T2Editor-v11` `e42e8fd` 전수조사 후 범용 템플릿으로 추출
+- 다음 에이전트는 `AGENT.md` `docs/agent-environment.md`에서 전체 환경 재현 가능

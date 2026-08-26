@@ -65,4 +65,4 @@
 
 - T2Editor: `T2EDITOR_DATA_PATH` vs `DB_PATH` vs `PRIVATE_PATH` 3분리, `T2Editor/config/t2_private_store.php:67` `t2_private_store_write` 패턴
 - Universal: `privateMirror` 1개로 단순화, `php-file` backend 선택 시에만 해당 패턴 차용
-- T2Editor `examples/t2editor/`에 원본 `t2_storage.php` 참조 보존
+- 원본 `t2_storage.php` 참조는 `tak2-08/T2Editor-v11` `T2Editor/config/t2_storage.php:284`에서 직접 확인 (공개 universal에는 미포함)

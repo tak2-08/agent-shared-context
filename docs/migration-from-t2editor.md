@@ -40,14 +40,14 @@
 ## 이식 단계
 
 ```bash
-# 1. T2Editor 스냅샷 보존 확인
-ls examples/t2editor/agent-context/  # 5 md + 4 json 원본 그대로
+# 1. T2Editor 분석 결과는 T2Editor repo에 저장 (공개 universal repo에는 포함 안 함)
+ls T2Editor-v11/T2Editor/agent-context/  # T2Editor 전용 DB + 분석 결과 (예: t2editor-deep-survey.md)
 
-# 2. 기존 T2Editor 프로젝트에서 universal로 이동
-cp -r T2Editor-v11/T2Editor/agent-context ./agent-context
+# 2. 기존 T2Editor 프로젝트에서 universal로 이동 (템플릿만)
+cp -r T2Editor-v11/T2Editor/agent-context ./agent-context  # 필요 시 선택적 복사, T2Editor 전용 경로는 제거 필요
 cp T2Editor-v11/tools/agent-context-index.mjs ./tools/
 # → universal의 agent-context-index.mjs로 교체 (config-aware)
-curl -fsSL https://raw.githubusercontent.com/tak2-08/agent-context/main/tools/agent-context-index.mjs -o tools/agent-context-index.mjs
+curl -fsSL https://raw.githubusercontent.com/tak2-08/agent-shared-context/main/tools/agent-context-index.mjs -o tools/agent-context-index.mjs
 
 # 3. config 생성
 cat > agent-context.config.json <<'JSON'
@@ -65,13 +65,13 @@ node tools/agent-context-index.mjs --init
 node tools/agent-context-index.mjs --check
 ```
 
-## 스냅샷 보존
+## 스냅샷 / 분석 결과 분리 원칙
 
-- `examples/t2editor/`는 PR #97 원본 16파일을 그대로 보존, 수정 금지
-- `examples/t2editor/ORIGIN.md`에 출처(`e42e8fd`, PR #97, 1093라인) 명시
-- `grep -r "T2Editor" agent-context/` → 0건 (examples 제외) — 순수성 증명
+- **공개 universal repo (`tak2-08/agent-shared-context`)에는 T2Editor DB를 포함하지 않는다** — T2Editor 전용 분석 결과는 `tak2-08/T2Editor-v11` `T2Editor/agent-context/`에만 저장된다 (예: `notes/2026-08-27-t2editor-deep-survey--muse-spark.md`).
+- 범용 예시는 `examples/nextjs-app/` `examples/python-cli/`만 유지, `grep -r "T2Editor" agent-context/` → 0건 — 순수성 증명
+- 원본 출처는 `e42e8fd` PR #97 (16파일 1093라인)이며 `docs/migration-from-t2editor.md`에 명시, 필요 시 `tak2-08/T2Editor-v11`에서 직접 참조
 
 ## T2Editor 연동 유지 (선택)
 
-- **A. Copy** (단기): `cp -r universal/agent-context/* T2Editor/agent-context/`
-- **B. Subtree** (장기): `git subtree add --prefix=T2Editor/agent-context https://github.com/tak2-08/agent-context.git main --squash`
+- **A. Copy** (단기): `cp -r universal/agent-context/* T2Editor/agent-context/` (T2Editor 전용 경로는 수동 제외)
+- **B. Subtree** (장기): `git subtree add --prefix=T2Editor/agent-context https://github.com/tak2-08/agent-shared-context.git main --squash`

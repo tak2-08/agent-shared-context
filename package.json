@@ -1,11 +1,12 @@
 {
-  "name": "agent-context",
+  "name": "agent-shared-context",
   "version": "0.1.0",
-  "description": "Token-saving file-based context DB for AI agents — L1 index (50 tok/entry) → L2 graph → L3 md. Git-synced, 82% cheaper.",
-  "keywords": ["agent-context", "ai-agents", "claude-code", "token-optimization", "knowledge-base", "frontmatter", "git-based", "llm-memory"],
+  "description": "Token-saving shared context DB for inter-agent collaboration — L1 index (50 tok/entry) → L2 graph → L3 md. Git-synced, 82% cheaper. Agents share context via git.",
+  "keywords": ["agent-shared-context", "agent-context", "inter-agent", "ai-agents", "claude-code", "token-optimization", "knowledge-base", "frontmatter", "git-based", "llm-memory", "multi-agent"],
   "license": "MIT",
   "type": "module",
   "bin": {
+    "agent-shared-context": "./tools/agent-context-init.mjs",
     "agent-context": "./tools/agent-context-init.mjs"
   },
   "files": ["agent-context/", "tools/", "templates/", "docs/"],
@@ -19,8 +20,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/tak2-08/agent-context.git"
+    "url": "https://github.com/tak2-08/agent-shared-context.git"
   },
-  "homepage": "https://github.com/tak2-08/agent-context#readme",
+  "homepage": "https://github.com/tak2-08/agent-shared-context#readme",
   "author": "tak2-08"
 }

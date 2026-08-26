@@ -1,12 +1,12 @@
 <!-- Path: README.md -->
-# agent-context — Token-saving file-based context DB for AI agents
+# agent-shared-context — Inter-Agent Shared Context DB
 
-> 클로드급 저용량·고비용 에이전트가 **최소 토큰으로 최대 정보를 가장 빠르게** 얻고, 작업 중 특이사항·아이디어·실패원인·이슈를 남겨 다음 에이전트가 배우며, **기능 연관성을 한눈에** 파악하는 Git 커밋형 공용 기억. `Glob *.md 10개` ~12,000토큰 → `index.json + Read 2개` ~2,200토큰 (**82% 절약**).
+> **에이전트끼리 콘텍스트를 공유**하기 위한 토큰 절약형 파일 기반 DB. 클로드급 저용량·고비용 에이전트가 **최소 토큰으로 최대 정보를 가장 빠르게** 얻고, 작업 중 특이사항·아이디어·실패원인·이슈를 남겨 **다음 에이전트(Claude/Codex/Opencode 등)가 배우며**, **기능 간 연관성을 한눈에** 파악하는 Git 커밋형 공용 기억. `Glob *.md 10개` ~12,000토큰 → `index.json + Read 2개` ~2,200토큰 (**82% 절약**).
 
-- **범용**: 어떤 프로젝트든 `npx agent-context init` 한 줄로 도입, `T2Editor`는 첫 번째 consumer (`examples/t2editor/`에 원본 스냅샷 보존, `origin/main` `e42e8fd` PR #97)
+- **에이전트 간 공유**: 모든 AI 에이전트가 `git pull` 하나로 동일한 `agent-context/`를 읽고 쓴다 — `agent-to-agent` 컨텍스트 브리지. `npx agent-shared-context init` 한 줄로 어떤 프로젝트든 도입
 - **3단계 점진 공개**: L1 `index.json` (50토큰/entry) → L2 `graph.json`/`features.json` → L3 `*.md` 1~2개
-- **Git이 곧 DB**: PR 리뷰·`git blame`·`git log --follow` 가능, 모든 agent가 `git pull`로 동기화
-- **학습 루프**: `learnings`의 `cause/fix/lesson` 3필드로 실패 반복 방지
+- **Git이 곧 DB**: PR 리뷰·`git blame`·`git log --follow` 가능, `T2Editor`는 첫 번째 consumer였다가 범용화로 분리
+- **학습 루프**: `learnings`의 `cause/fix/lesson` 3필드로 실패 반복 방지 — 이전 에이전트의 실패를 다음 에이전트가 즉시 학습
 
 ## 빠른 시작
 
@@ -14,18 +14,19 @@
 # 1. 설치 (3가지 중 택1)
 
 # A. npx (권장, 0 clone)
-npx agent-context init
-npx agent-context init --yes --project my-app --features auth,api,ui
+npx agent-shared-context init
+npx agent-shared-context init --yes --project my-app --features auth,api,ui
+# 호환 alias: npx agent-context init
 
 # B. git clone
-git clone https://github.com/tak2-08/agent-context.git
-cp -r agent-context/agent-context ./agent-context
-cp agent-context/agent-context.config.json ./
-cp -r agent-context/tools ./tools
+git clone https://github.com/tak2-08/agent-shared-context.git
+cp -r agent-shared-context/agent-context ./agent-context
+cp agent-shared-context/agent-context.config.json ./
+cp -r agent-shared-context/tools ./tools
 node tools/agent-context-index.mjs --init
 
 # C. curl 원라인 (git 없이)
-curl -fsSL https://raw.githubusercontent.com/tak2-08/agent-context/main/tools/copy-template.sh | bash
+curl -fsSL https://raw.githubusercontent.com/tak2-08/agent-shared-context/main/tools/copy-template.sh | bash
 ```
 
 ```bash
@@ -84,8 +85,8 @@ tools/
  ├─ agent-context-validate.mjs     # frontmatter lint
  └─ agent-context-init.mjs         # npx 진입점
 templates/frontmatter/             # learning/bug/decision/diary 템플릿
-docs/                              # protocol/schema/storage/migration-from-t2editor
-examples/                          # t2editor / nextjs-app / python-cli
+docs/                              # protocol/schema/storage/migration-from-t2editor/agent-environment
+examples/                          # nextjs-app / python-cli (T2Editor 분석은 원본 repo에만)
 ```
 
 ## 검색 쿼리 (복붙용)
@@ -146,8 +147,21 @@ find agent-context -name "*.json" | xargs -I {} node -e "JSON.parse(require('fs'
 
 CI는 `.github/workflows/ci.yml`에서 이 3종만 수행 (경량 gate).
 
+## Agent Model & Environment (이 DB를 만든 주체)
+
+- **Model**: `muse-spark-1.2-contributor-free` (Meta Muse Spark, via OpenCode / opencode/muse-spark-1.2-contributor-free)
+- **Knowledge cutoff**: 2026-01-04 / Today 2026-08-26 (UTC)
+- **Work environment**: `OpenCode` on `linux (bash)`, workspace `/tmp/agent-context-universal`, is git repo `yes`, platform `linux`
+- **Skills**: `customize-opencode` (for opencode config)
+- **Tools available**: `bash`, `read`, `edit`, `write`, `glob`, `grep`, `task` (explore/general subagents)
+- **T2Editor 정본 확인**: 매 작업 `git fetch origin` `git log --oneline origin/main -5` `git rev-parse HEAD && origin/main` 기준, `T2Editor-v11/AGENTS.md:10` 준수
+- **검증**: `node tools/t2-static-check.mjs` `node tools/t2-css-contract.mjs` `bash tools/t2-release-gate.sh --quick` (env: Node ≥18, php-cli, python3)
+
+이 DB는 위 모델·환경에서 생성되었으며, 모든 에이전트(Claude/Codex/Opencode)가 동일한 `agent-shared-context` 프로토콜로 읽고 쓸 수 있다.
+
 ## 출처
 
-- 원본: `tak2-08/T2Editor-v11` `T2Editor/agent-context` ( `e42e8fd` PR #97, 16파일 1093라인 )
-- 범용화: `docs/migration-from-t2editor.md` 대조표 참조, `examples/t2editor/`에 원본 스냅샷 보존
+- 원본: `tak2-08/T2Editor-v11` `T2Editor/agent-context` ( `e42e8fd` PR #97, 16파일 1093라인 ) — 현재는 T2Editor에 분석 결과만 유지, 공개 universal repo에는 예시만 포함 (원본 스냅샷은 `docs/migration-from-t2editor.md`로 대체)
+- 범용화: `docs/migration-from-t2editor.md` 대조표 참조
 - 라이선스: MIT
+- Repository: `https://github.com/tak2-08/agent-shared-context` (구 `agent-context`에서 `agent-shared-context`로 개명 — 에이전트 간 공유 목적 명시)

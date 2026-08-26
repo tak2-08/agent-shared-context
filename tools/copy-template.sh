@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # Path: tools/copy-template.sh
-# Usage: curl -fsSL https://raw.githubusercontent.com/tak2-08/agent-context/main/tools/copy-template.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/tak2-08/agent-shared-context/main/tools/copy-template.sh | bash
 #        curl -fsSL .../copy-template.sh | bash -s -- --project my-app --features auth,api
+# 이전 이름 agent-context는 리다이렉트됨 (https://github.com/tak2-08/agent-context → agent-shared-context)
 set -euo pipefail
-REPO="tak2-08/agent-context"
+REPO="tak2-08/agent-shared-context"
 BRANCH="main"
 ROOT_URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}"
 
-echo "→ agent-context template copy (${REPO}@${BRANCH})"
+echo "→ agent-shared-context template copy (${REPO}@${BRANCH}) — inter-agent shared context"
 mkdir -p agent-context/{notes,learnings,bugs,decisions,ideas,diary,todos,code-history,archive} tools
 
 fetch() {
