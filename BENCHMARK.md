@@ -16,9 +16,15 @@
 
 | scale | full tokens | avg top 3 tokens | avg saving | hitRate | avg latency (search) | est. full Read latency | tokens/hit |
 |---|---|---|---|---|---|---|
+<<<<<<< HEAD
 | 5 | 1315 | 178 | 83.1% | 80.0% | 0.11ms | 0.25ms (est. Read all md) | 223 |
 | 50 | 16780 | 761 | 94.7% | 85.0% | 0.40ms | 2.50ms (est. Read all md) | 895 |
 | 500 | 197940 | 1883 | 98.9% | 85.0% | 2.60ms | 25.00ms (est. Read all md) | 2216 |
+=======
+| 5 | 1315 | 178 | 83.1% | 80.0% | 0.16ms | 0.25ms (est. Read all md) | 223 |
+| 50 | 16780 | 761 | 94.7% | 85.0% | 0.41ms | 2.50ms (est. Read all md) | 895 |
+| 500 | 197940 | 1883 | 98.9% | 85.0% | 2.34ms | 25.00ms (est. Read all md) | 2216 |
+>>>>>>> fix/integration-defects
 
 ### Interpretation (critical, not hype)
 
@@ -30,11 +36,19 @@
 
 | query | assignedLevel | top tokens | saving | hit | latency |
 |---|---|---|---|---|
+<<<<<<< HEAD
 | auth | post-it | 45 | 99.7% | ✅ | 1.38ms |
 | api | post-it | 80 | 99.5% | ✅ | 0.33ms |
 | jwt | post-it | 0 | n/a (miss) | ❌ | 0.32ms |
 | pagination | post-it | 0 | n/a (miss) | ❌ | 0.31ms |
 | cache | post-it | 0 | n/a (miss) | ❌ | 0.36ms |
+=======
+| auth | post-it | 45 | 99.7% | ✅ | 0.39ms |
+| api | post-it | 80 | 99.5% | ✅ | 0.33ms |
+| jwt | post-it | 0 | n/a (miss) | ❌ | 0.89ms |
+| pagination | post-it | 0 | n/a (miss) | ❌ | 1.56ms |
+| cache | post-it | 0 | n/a (miss) | ❌ | 0.64ms |
+>>>>>>> fix/integration-defects
 
 ### What we learned while benchmarking (ideas & shortcomings →补)
 
@@ -65,7 +79,11 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
     "avgTopTokens": 178,
     "avgSaving": "83.1%",
     "hitRate": "80.0%",
+<<<<<<< HEAD
     "avgLatency": "0.11ms",
+=======
+    "avgLatency": "0.16ms",
+>>>>>>> fix/integration-defects
     "fullLatencyEst": "0.25ms (est. Read all md)",
     "tokensPerHit": 223,
     "perQuery": [
@@ -75,7 +93,11 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 50,
         "saving": "96.2%",
         "hit": true,
+<<<<<<< HEAD
         "latency": "0.57ms"
+=======
+        "latency": "0.65ms"
+>>>>>>> fix/integration-defects
       },
       {
         "query": "api",
@@ -91,7 +113,7 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 0,
         "saving": "n/a (miss)",
         "hit": false,
-        "latency": "0.07ms"
+        "latency": "0.16ms"
       },
       {
         "query": "pagination",
@@ -99,7 +121,7 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 0,
         "saving": "n/a (miss)",
         "hit": false,
-        "latency": "0.05ms"
+        "latency": "0.13ms"
       },
       {
         "query": "cache",
@@ -107,7 +129,11 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 0,
         "saving": "n/a (miss)",
         "hit": false,
+<<<<<<< HEAD
         "latency": "0.05ms"
+=======
+        "latency": "0.35ms"
+>>>>>>> fix/integration-defects
       }
     ]
   },
@@ -119,7 +145,11 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
     "avgTopTokens": 761,
     "avgSaving": "94.7%",
     "hitRate": "85.0%",
+<<<<<<< HEAD
     "avgLatency": "0.40ms",
+=======
+    "avgLatency": "0.41ms",
+>>>>>>> fix/integration-defects
     "fullLatencyEst": "2.50ms (est. Read all md)",
     "tokensPerHit": 895,
     "perQuery": [
@@ -129,7 +159,11 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 45,
         "saving": "99.7%",
         "hit": true,
+<<<<<<< HEAD
         "latency": "1.38ms"
+=======
+        "latency": "0.39ms"
+>>>>>>> fix/integration-defects
       },
       {
         "query": "api",
@@ -145,7 +179,11 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 0,
         "saving": "n/a (miss)",
         "hit": false,
+<<<<<<< HEAD
         "latency": "0.32ms"
+=======
+        "latency": "0.89ms"
+>>>>>>> fix/integration-defects
       },
       {
         "query": "pagination",
@@ -153,7 +191,7 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 0,
         "saving": "n/a (miss)",
         "hit": false,
-        "latency": "0.31ms"
+        "latency": "1.56ms"
       },
       {
         "query": "cache",
@@ -161,7 +199,11 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 0,
         "saving": "n/a (miss)",
         "hit": false,
+<<<<<<< HEAD
         "latency": "0.36ms"
+=======
+        "latency": "0.64ms"
+>>>>>>> fix/integration-defects
       }
     ]
   },
@@ -173,7 +215,11 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
     "avgTopTokens": 1883,
     "avgSaving": "98.9%",
     "hitRate": "85.0%",
+<<<<<<< HEAD
     "avgLatency": "2.60ms",
+=======
+    "avgLatency": "2.34ms",
+>>>>>>> fix/integration-defects
     "fullLatencyEst": "25.00ms (est. Read all md)",
     "tokensPerHit": 2216,
     "perQuery": [
@@ -181,17 +227,25 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "query": "auth",
         "assignedLevel": "post-it",
         "topTokens": 45,
-        "saving": "100.0%",
+        "saving": "99.9%+",
         "hit": true,
+<<<<<<< HEAD
         "latency": "5.40ms"
+=======
+        "latency": "3.82ms"
+>>>>>>> fix/integration-defects
       },
       {
         "query": "api",
         "assignedLevel": "post-it",
         "topTokens": 45,
-        "saving": "100.0%",
+        "saving": "99.9%+",
         "hit": true,
+<<<<<<< HEAD
         "latency": "2.38ms"
+=======
+        "latency": "1.83ms"
+>>>>>>> fix/integration-defects
       },
       {
         "query": "jwt",
@@ -199,7 +253,11 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 0,
         "saving": "n/a (miss)",
         "hit": false,
+<<<<<<< HEAD
         "latency": "2.32ms"
+=======
+        "latency": "6.05ms"
+>>>>>>> fix/integration-defects
       },
       {
         "query": "pagination",
@@ -207,7 +265,11 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 0,
         "saving": "n/a (miss)",
         "hit": false,
+<<<<<<< HEAD
         "latency": "2.66ms"
+=======
+        "latency": "4.64ms"
+>>>>>>> fix/integration-defects
       },
       {
         "query": "cache",
@@ -215,7 +277,11 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 0,
         "saving": "n/a (miss)",
         "hit": false,
+<<<<<<< HEAD
         "latency": "2.46ms"
+=======
+        "latency": "4.53ms"
+>>>>>>> fix/integration-defects
       }
     ]
   }
