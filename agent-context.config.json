@@ -108,5 +108,30 @@
   "compliance": {
     "law": false,
     "cssContract": false
+  },
+  "live": {
+    "enabled": true,
+    "sessions": {
+      "registry": "agent-context/sessions/sessions.json",
+      "inboxDir": "agent-context/sessions/inbox",
+      "config": "agent-context/sessions/config.json",
+      "inbound": "accept",
+      "socketType": "file",
+      "plainTextOnly": true,
+      "rateLimit": 10,
+      "dedupWindow": 5000,
+      "maxInbox": 50,
+      "maxHeld": 100,
+      "isolatePeerMachines": false
+    },
+    "radio": {
+      "threadsDir": "agent-context/radio/threads",
+      "passiveAware": true,
+      "backgroundTask": true,
+      "noHarnessModification": true,
+      "noExtraLLMCalls": true,
+      "fivePhaseProtocol": true,
+      "primitives": ["create_thread", "send_message", "wait_for_mention"]
+    }
   }
 }

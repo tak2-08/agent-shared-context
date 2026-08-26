@@ -72,7 +72,7 @@ node tools/agent-context-index.mjs --check  # CI에서 drift 감지
 ## 디렉터리 맵
 
 ```
-agent-context.config.json          # 단일 설정 원천 (18개 추상화)
+agent-context.config.json          # 단일 설정 원천 (live 포함)
 agent-context/
  ├─ index.json                     # L1 — 50토큰/entry, preview 60자+summary 120자
  ├─ graph.json                     # L2 — depends_on/affects/edges
@@ -80,12 +80,21 @@ agent-context/
  ├─ schema.json                    # frontmatter JSON Schema (draft-07)
  ├─ README.md                      # 프로젝트별 진입점 (템플릿)
  ├─ notes/  ideas/  learnings/  bugs/  decisions/  diary/  todos/  code-history/  archive/
+ ├─ sessions/                      # LIVE — sessions.json + inbox/<name>.jsonl (Claude file inbox)
+ │  └─ inbox/                      # per-session file inbox (Unix socket 대체)
+ └─ radio/                         # LIVE — threads/<name>.json (AgentRadio file threads)
+    └─ threads/                    # create_thread / send_message / wait_for_mention
 tools/
  ├─ agent-context-index.mjs        # --init/--check/--to-sqlite, config-aware
  ├─ agent-context-validate.mjs     # frontmatter lint
- └─ agent-context-init.mjs         # npx 진입점
+ ├─ agent-context-init.mjs         # npx 진입점
+ ├─ agent-sessions.mjs             # LIVE — Claude reverse-engineered ListAgents/SendMessage
+ └─ agent-radio.mjs                # LIVE — AgentRadio passive awareness (Apache 2.0)
 templates/frontmatter/             # learning/bug/decision/diary 템플릿
-docs/                              # protocol/schema/storage/agent-environment
+docs/                              # protocol/schema/storage/agent-environment/radio/sessions
+.claude/skills/agent-shared-context/ # Claude Code skill
+skills/agent-shared-context/      # OpenCode/Codex skill
+REFERENCES.md                      # AgentRadio + Claude attribution (Apache 2.0)
 examples/                          # nextjs-app / python-cli
 ```
 
@@ -137,15 +146,60 @@ keywords:
   - `backend: json` (기본) — 2층 없음, Grep 50ms
   - `backend: sqlite` — `privateMirror/search.db` FTS5, 1000+ 시 `node tools/agent-context-index.mjs --to-sqlite`
 
+## Live — Sessions & Radio (NEW, AgentRadio + Claude reverse-engineered)
+
+**Persistent** (`index.json` git) + **Live** (file inbox/radio, no server) 두 축으로 업그레이드:
+
+- **Live sessions** (Claude `v2.1.224` cross-session reverse-engineered, file-based): `agent-context/sessions/sessions.json` + `sessions/inbox/<name>.jsonl` (Unix socket 대체, same-machine file never traverses servers)
+  ```bash
+  node tools/agent-sessions.mjs register my-session
+  node tools/agent-sessions.mjs list                              # ListAgents
+  node tools/agent-sessions.mjs send other "API moved" --from my # SendMessage plain text only, respects crossSessionInbound accept/hold/refuse + isolatePeerMachines + rateLimit/dedup
+  node tools/agent-sessions.mjs inbox my-session
+  node tools/agent-sessions.mjs wait my-session --timeout 30000   # wait_for_mention + full snapshot
+  ```
+
+- **Live radio** (AgentRadio `Coral-Protocol/AgentRadio` Apache 2.0, passive awareness): `agent-context/radio/threads/<name>.json` + `sessions/inbox/` for background watcher
+  ```bash
+  node tools/agent-radio.mjs create-thread planning "claude,codex"
+  node tools/agent-radio.mjs send planning "found JWT race @codex" --mention @codex
+  node tools/agent-radio.mjs wait codex --timeout 30000   # background task, no turn stolen (L3) vs blocking receive (L2)
+  node tools/agent-radio.mjs protocol  # P1 Explore → P2 Divide → P3 Execute → P4 Review → P5 Submit (assembler gates)
+  ```
+
+- **파일 기반**: no `coral-server.jar`, no Docker/Modal/Harbor, no Claude Code binary, no Anthropic servers for same-machine — `agent-shared-context`는 범용 `file` inbox로 재구현. 상세는 `docs/radio.md` `docs/sessions.md` `REFERENCES.md` (참고한 부분 명시, Apache 2.0).
+
+## Skill — Claude/Codex/OpenCode 표준
+
+```bash
+# Claude Code
+cp -r .claude/skills/agent-shared-context ~/.claude/skills/  # or auto-discovered from repo
+# OpenCode / Codex
+cp -r skills/agent-shared-context ~/.config/opencode/skills/
+cp -r skills/agent-shared-context ~/.codex/skills/
+```
+
+- **`.claude/skills/agent-shared-context/SKILL.md`** — Claude Code skill ( `name: agent-shared-context` `allowed-tools: Read,Grep,Glob,Bash(node tools/*)` ), 3-step protocol + live sessions/radio + five-phase protocol
+- **`skills/agent-shared-context/SKILL.md`** — OpenCode/Codex generic skill (same content, standard `name/description` frontmatter)
+- 설치 후 Claude/Codex/OpenCode 모두 `Read agent-context/index.json` → `Grep` → `Read md 1~2` + `node tools/agent-sessions.mjs send` / `node tools/agent-radio.mjs send` 로 동일한 프로토콜로 협업. 상세는 `docs/skill.md` (또는 skill 파일 자체).
+
 ## 검증
 
 ```bash
 node tools/agent-context-validate.mjs
 node tools/agent-context-index.mjs --check
+node tools/agent-sessions.mjs list
+node tools/agent-radio.mjs list-threads
 find agent-context -name "*.json" | xargs -I {} node -e "JSON.parse(require('fs').readFileSync('{}','utf8'))"
 ```
 
-CI는 `.github/workflows/ci.yml`에서 이 3종만 수행 (경량 gate).
+CI는 `.github/workflows/ci.yml`에서 이 5종(validate+index+sessions+radio+skill) 중 3종을 수행 (경량 gate), 로컬에서 5종 모두 확인 가능.
+
+## References & Attribution
+
+- **AgentRadio**: `Coral-Protocol/AgentRadio` (Apache 2.0, `arXiv:2607.28430`) — three primitives `create_thread`/`send_message`/`wait_for_mention`, five-phase `P1-P5`, passive awareness background vs blocking receive, no harness modification, no extra LLM calls — **참고한 부분**: `tools/agent-radio.mjs` `docs/radio.md`에 file-based로 재구현, `coral-server.jar` 등은 미복사. See `REFERENCES.md`.
+- **Claude sessions**: https://code.claude.com/docs/en/cross-session-messaging `v2.1.224` + Apache open-source reconstructions `LING71671/Open-ClaudeCode` `C293943/claude-code-open` `montisan/claude-code-source-code` `anthropics/claude-code` PR #41447 (Apache 2.0) — `ListAgents`/`SendMessage`/per-session socket/inbox/`crossSessionInbound`/`isolatePeerMachines`/plain text/rateLimit — **리버스 엔지니어링** 후 `tools/agent-sessions.mjs` `docs/sessions.md`에 file-based `sessions/inbox/*.jsonl`로 재구현, `cli.js` 미복사. See `REFERENCES.md`.
+- 전체 목록은 `REFERENCES.md`에 Apache 2.0 준수 귀속 고지와 함께 명시.
 
 ## Agent Model & Environment (이 DB를 만든 주체)
 

@@ -9,7 +9,7 @@
     "agent-shared-context": "./tools/agent-context-init.mjs",
     "agent-context": "./tools/agent-context-init.mjs"
   },
-  "files": ["agent-context/", "tools/", "templates/", "docs/"],
+  "files": ["agent-context/", "tools/", "templates/", "docs/", ".claude/skills/", "skills/", "REFERENCES.md", "AGENT.md"],
   "engines": {
     "node": ">=18"
   },

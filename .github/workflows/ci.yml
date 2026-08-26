@@ -24,3 +24,20 @@ jobs:
         run: node tools/agent-context-index.mjs --check
       - name: Config scaffolding check
         run: node tools/agent-context-index.mjs --init --check 2>&1 | head -20
+      - name: Live sessions check (Claude reverse-engineered)
+        run: |
+          node --check tools/agent-sessions.mjs
+          node tools/agent-sessions.mjs list
+          node tools/agent-sessions.mjs config
+      - name: Live radio check (AgentRadio Apache 2.0)
+        run: |
+          node --check tools/agent-radio.mjs
+          node tools/agent-radio.mjs list-threads
+          node tools/agent-radio.mjs protocol
+      - name: Skill check
+        run: |
+          test -f .claude/skills/agent-shared-context/SKILL.md
+          test -f skills/agent-shared-context/SKILL.md
+          test -f REFERENCES.md
+          grep -q "AgentRadio" REFERENCES.md
+          grep -q "Coral-Protocol" REFERENCES.md

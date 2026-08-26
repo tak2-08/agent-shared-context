@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "_path": "agent-context/sessions/sessions.json",
+  "description": "Live session registry — file-based equivalent of Claude Code's per-session Unix socket registry. Each session binds an inbox file instead of a socket. Git-ignored? No — this file is git-tracked for passive awareness across clones, but inbox/ contents are ephemeral.",
+  "generated_at": "2026-08-27T00:00:00+09:00",
+  "sessions": []
+}
