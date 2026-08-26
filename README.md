@@ -252,6 +252,8 @@ cp -r skills/agent-shared-context ~/.codex/skills/
 
 **결과 중심 기록 원칙**: 도구 호출 로그 저장 금지 — 결론 + refs(검증 링크)만. 토큰 낭비 제거.
 
+**자동 관찰(v0.5)**: `node tools/ac-watch.mjs` — git 이력에서 학습 후보를 자동 생성(.candidates/, proposed). 승격 전까지 비확정으로 오염 방지. `ROADMAP.md` 참조.
+
 ## 검증
 
 ```bash

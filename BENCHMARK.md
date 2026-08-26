@@ -287,3 +287,19 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
   }
 ]
 ```
+
+## Task-success benchmark (#4 프록시)
+
+```json
+{
+  "metric": "retrieval-task success (proxy for agent task success)",
+  "tasks": 3,
+  "accuracy": "100.0%",
+  "avgTokensPerTask": 88,
+  "flatReadTokensPerTask": 265,
+  "savingVsFlat": "66.7%",
+  "honesty_note": "이 수치는 \"검색→정답 파일 도달\" 프록시다. 실제 작업 성공률(버그 수정 등)은 라이브 에이전트 하네스 필요 — ROADMAP P1."
+}
+```
+
+> 실행: `node tools/benchmark-task.mjs`. 위 지표는 "질의→정답 파일 도달" 프록시이며, 실제 작업 성공률은 라이브 에이전트 하네스 과제 (ROADMAP P1).

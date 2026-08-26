@@ -339,6 +339,35 @@ try {
   indexData = { version: 1 };
 }
 
+// [#3] 인과 관계 추출 — related[]가 가리키는 대상 entry의 type으로 관계 종류 유추
+// (decision→supersedes, bug→learning=mitigated_by, idea→decision=adopted_as 등)
+const byPath = new Map(entries.map(e=>[e.path, e]));
+const relations = [];
+for (const e of entries) {
+  for (const r of (e.related||[])) {
+    const t = byPath.get(r.replace(/^agent-context\//,''));
+    if (!t || t.id===e.id) continue;
+    let kind = 'references';
+    if (e.type==='decision' && t.type==='decision') kind = 'supersedes';
+    else if (e.type==='learning' && t.type==='bug') kind = 'mitigates';
+    else if (e.type==='bug' && t.type==='learning') kind = 'caused_by';
+    else if (e.type==='decision' && t.type==='idea') kind = 'adopted_from';
+    else if (e.type==='code-history' && t.type==='decision') kind = 'implements';
+    relations.push({ from: e.id, to: t.id, kind });
+  }
+}
+const knowledge = {
+  note: 'related[]에서 유추한 인과 엣지 — bug↔learning, decision supersedes 등. graph.json(feature)과 별개의 지식 그래프.',
+  edges: relations,
+};
+
+// [#5] 장기 운영 — 오래된 고우선순위 기억의 신선도 리포트 (모순 정리 대상 후보)
+const STALE_DAYS = CONFIG.storage?.staleDays ?? 90;
+const now = Date.now();
+const stale = entries
+  .filter(e => e.priority >= 4 && (now - new Date(e.updated).getTime()) > STALE_DAYS*86400000)
+  .map(e => ({ id:e.id, title:e.title, ageDays: Math.floor((now-new Date(e.updated).getTime())/86400000), path:e.path }));
+
 const nextIndex = {
   version: 1,
   generated_at: new Date().toISOString(),
@@ -354,6 +383,8 @@ const nextIndex = {
   },
   counts,
   entries,
+  knowledge,
+  stale: { threshold_days: CONFIG.storage?.staleDays ?? 90, count: stale.length, items: stale.slice(0,10) },
 };
 
 if (ARGS.check && !ARGS.init) {

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-08-26T11:02:08.983Z",
+  "generated_at": "2026-08-26T11:58:03.541Z",
   "generated_by": "agent-context-index.mjs",
   "_path": "agent-context/index.json",
   "description": "L1 압축 카탈로그 — 저용량 에이전트가 가장 먼저 읽는 파일. preview 60자 + summary 120자로 본문 Read 없이 관련성 판단.",
@@ -8,16 +8,39 @@
     "soft_limit_chars": 200000,
     "max_entries": 1000,
     "should_compress": false,
-    "total_chars": 1980,
+    "total_chars": 1953,
     "total_entries": 3
   },
   "counts": {
-    "learning": 1,
     "note": 1,
+    "learning": 1,
     "handoff": 1,
     "total": 3
   },
   "entries": [
+    {
+      "id": "note-20260826-39b7749c",
+      "type": "note",
+      "level": "post-it",
+      "title": "API moved",
+      "tags": [
+        "note",
+        "api"
+      ],
+      "feature": "api",
+      "scope": "global",
+      "agent": "claude",
+      "created": "2026-08-26T11:52:10.157Z",
+      "updated": "2026-08-26T11:52:10.157Z",
+      "status": "done",
+      "priority": 5,
+      "summary": "API moved to /v2/items",
+      "preview": "API moved to /v2/items",
+      "path": "notes/2026-08-26-api-moved--claude.md",
+      "related": [],
+      "affects": [],
+      "chars": 407
+    },
     {
       "id": "learning-20260826-aaa11111",
       "type": "learning",
@@ -42,29 +65,6 @@
       "chars": 429
     },
     {
-      "id": "note-20260826-a72de388",
-      "type": "note",
-      "level": "memo",
-      "title": "API moved",
-      "tags": [
-        "note",
-        "api"
-      ],
-      "feature": "api",
-      "scope": "global",
-      "agent": "claude",
-      "created": "2026-08-26T11:00:26.070Z",
-      "updated": "2026-08-26T11:00:26.070Z",
-      "status": "done",
-      "priority": 5,
-      "summary": "API moved to /v2/items — post-it test",
-      "preview": "API moved to /v2/items — post-it test",
-      "path": "notes/2026-08-26-api-moved--claude.md",
-      "related": [],
-      "affects": [],
-      "chars": 434
-    },
-    {
       "id": "handoff-20260826-khd31lw6",
       "type": "handoff",
       "level": "diary",
@@ -87,5 +87,14 @@
       "affects": [],
       "chars": 1117
     }
-  ]
+  ],
+  "knowledge": {
+    "note": "related[]에서 유추한 인과 엣지 — bug↔learning, decision supersedes 등. graph.json(feature)과 별개의 지식 그래프.",
+    "edges": []
+  },
+  "stale": {
+    "threshold_days": 90,
+    "count": 0,
+    "items": []
+  }
 }

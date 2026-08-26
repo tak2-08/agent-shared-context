@@ -144,6 +144,17 @@ node tools/benchmark.mjs                # synthetic 5/50/500, writes BENCHMARK.m
 - 결론 + `refs`(검증 링크)만 저장. 다음 에이전트는 결론을 쓰거나 refs로 직접 확인
 - 버그는 `repro`에 재현 레시피만 (이것도 과정 로그가 아니라 레시피)
 
+## Auto-observability & FTS (v0.5.0)
+
+| 별칭 | 명령 | 동작 |
+|---|---|---|
+| /ac-watch | `node tools/ac-watch.mjs --since "1 day ago"` | git 이력에서 학습 후보 자동 감지 → .candidates/ (승격 전까지 비확정) |
+| /ac-promote | `node tools/ac-watch.mjs promote <file>` | 후보를 정식 디렉터리로 승격 |
+| /ac-fts | `node tools/ac-fts.mjs build/query/status` | SQLite FTS 백엔드 (Node ≥22.5 내장, 0 npm install) |
+| /ac-tasks | `node tools/benchmark-task.mjs` | 검색→정답 도달 과업 성공률 측정 |
+
+자동 관찰은 **후보만** 만든다 — 결론은 에이전트가 채워 넣어야 오염이 없다. 상세: `ROADMAP.md` `docs/session-continuity.md`.
+
 ## References
 
 - Concepts from `Coral-Protocol/AgentRadio` (Apache 2.0) and contemporary session collaboration patterns — file-based adaptation. See `docs/radio.md` `docs/sessions.md` `docs/hierarchy.md` `REFERENCES.md`.
