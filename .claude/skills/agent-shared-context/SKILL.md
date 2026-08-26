@@ -54,6 +54,24 @@ allowed-tools: "Read, Grep, Glob, Bash(node tools/agent-sessions.mjs *), Bash(no
   - `node tools/agent-radio.mjs wait <agent> --timeout 30000` — background wait, full thread snapshot
   - `node tools/agent-radio.mjs protocol` — P1 Explore → P2 Divide → P3 Execute → P4 Review → P5 Submit
 
+## Session continuity — 압축 대체 (손실 0, ~600 tok 복원)
+
+세션이 끝나거나 컨텍스트가 차도 걱정 없음 — 중요한 것은 작업 중 entry로 저장됨.
+
+```bash
+# 세션 종료 전 (~280 tok)
+node tools/agent-handoff.mjs save --session my-session --task "auth 리팩터링" \
+  --done "JWT race 수정;테스트 추가" --next "문서화;회귀 시험"
+# → sessions/handoff/<date>--<name>.md + CURRENT.md 갱신
+
+# 새 세션 첫 동작 (~600 tok 총)
+Read agent-context/CURRENT.md                 # ~50 tok 포인터
+node tools/agent-handoff.mjs load             # ~280 tok task/done/next
+node tools/agent-search-lite.mjs "<query>"    # 심층은 온디맨드
+```
+
+**서브에이전트 불필요** — 모든 도구는 단일 Bash 호출. 메인 에이전트가 직접 검색하며, Node가 없으면 순수 Grep 폴백(`Grep ^level: post-it` → `^priority: [45]` 순)으로도 동일 결과. 상세는 `docs/session-continuity.md`.
+
 ## Five-phase protocol (multi-agent)
 
 - **P1 Explore**: every agent starts background watcher, drafts sub-questions, nothing sent

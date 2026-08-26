@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-08-26T07:51:21.971Z",
+  "generated_at": "2026-08-26T09:51:47.664Z",
   "generated_by": "agent-context-index.mjs",
   "_path": "agent-context/index.json",
   "description": "L1 압축 카탈로그 — 저용량 에이전트가 가장 먼저 읽는 파일. preview 60자 + summary 120자로 본문 Read 없이 관련성 판단.",
@@ -8,11 +8,36 @@
     "soft_limit_chars": 200000,
     "max_entries": 1000,
     "should_compress": false,
-    "total_chars": 0,
-    "total_entries": 0
+    "total_chars": 1117,
+    "total_entries": 1
   },
   "counts": {
-    "total": 0
+    "handoff": 1,
+    "total": 1
   },
-  "entries": []
+  "entries": [
+    {
+      "id": "handoff-20260826-khd31lw6",
+      "type": "handoff",
+      "level": "diary",
+      "title": "Session handoff — muse-spark",
+      "tags": [
+        "handoff",
+        "session"
+      ],
+      "feature": "global",
+      "scope": "global",
+      "agent": "system",
+      "created": "2026-08-26T09:35:03.690Z",
+      "updated": "2026-08-26T09:35:03.690Z",
+      "status": "done",
+      "priority": 5,
+      "summary": "Upgrade agent-shared-context with hierarchy, live radio, benchmark",
+      "preview": "Upgrade agent-shared-context with hierarchy, live radio, ben",
+      "path": "sessions/handoff/2026-08-26--muse-spark.md",
+      "related": [],
+      "affects": [],
+      "chars": 1117
+    }
+  ]
 }

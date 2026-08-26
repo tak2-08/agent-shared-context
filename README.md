@@ -1,12 +1,30 @@
 <!-- Path: README.md -->
 # agent-shared-context — Inter-Agent Shared Context DB
 
-> **에이전트끼리 콘텍스트를 공유**하기 위한 토큰 절약형 파일 기반 DB. 클로드급 저용량·고비용 에이전트가 **최소 토큰으로 최대 정보를 가장 빠르게** 얻고, 작업 중 특이사항·아이디어·실패원인·이슈를 남겨 **다음 에이전트(Claude/Codex/Opencode 등)가 배우며**, **기능 간 연관성을 한눈에** 파악하는 Git 커밋형 공용 기억. `Glob *.md 10개` ~12,000토큰 → `index.json + Read 2개` ~2,200토큰 (**82% 절약**).
+> **에이전트끼리 콘텍스트를 공유**하기 위한 토큰 절약형 파일 기반 DB. 클로드급 저용량·고비용 에이전트가 **최소 토큰으로 최대 정보를 가장 빠르게** 얻고, 작업 중 특이사항·아이디어·실패원인·이슈를 남겨 **다음 에이전트(Claude/Codex/OpenCode 등)가 배우며**, **기능 간 연관성을 한눈에** 파악하는 Git 커밋형 공용 기억.
 
-- **에이전트 간 공유**: 모든 AI 에이전트가 `git pull` 하나로 동일한 `agent-context/`를 읽고 쓴다 — `agent-to-agent` 컨텍스트 브리지. `npx agent-shared-context init` 한 줄로 어떤 프로젝트든 도입
-- **3단계 점진 공개**: L1 `index.json` (50토큰/entry) → L2 `graph.json`/`features.json` → L3 `*.md` 1~2개
-- **Git이 곧 DB**: PR 리뷰·`git blame`·`git log --follow` 가능, 모든 agent가 `git pull`로 동기화
-- **학습 루프**: `learnings`의 `cause/fix/lesson` 3필드로 실패 반복 방지 — 이전 에이전트의 실패를 다음 에이전트가 즉시 학습
+## 📊 실측 벤치마크 (직접 테스트, 재현 가능 — `BENCHMARK.md`)
+
+> Node ≥18만으로 `node tools/benchmark.mjs` 실행, API 키 불필요. tokens=chars/4, hitRate·latency도 함께 공개 (saving만 부풀리지 않음).
+
+| 시나리오 | 전체 읽기 | 이 프로젝트 사용 | 절약 | 히트율 |
+|---|---|---|---|---|
+| 검색 5개 | 5,280 tok | 1,040 tok | **80%** | 80% |
+| 검색 50개 | 25,580 tok | 1,758 tok | **93%** | 85% |
+| 검색 500개 | 194,800 tok | 2,003 tok | **99%** | 85% |
+| **세션 복원** 500개 | 191,825 tok (재독입) | **3,460 tok** (핸드오프) | **98%**, 손실 0 | — |
+
+*세션 복원: 압축(compaction) 없이 `CURRENT.md` + 핸드오프 포인터 번들로 새 세션이 ~600 tok 만에 기존 작업을 이어받음. 상세는 `docs/session-continuity.md`.*
+
+- **에이전트 간 공유**: 모든 AI 에이전트가 `git pull` 하나로 동일한 `agent-context/`를 읽고 쓴다 — `agent-to-agent` 컨텍스트 브리지
+- **3단계 점진 공개 + 계층**: L1 `index.json` → L2 `graph.json`/`features.json` → L3 `*.md` 1~2개, 가벼운 AI가 `post-it`(15tok)→`library`(5000tok) 중 시작점 자동 결정
+- **서브에이전트 불필요**: 모든 도구가 단일 Bash 호출 — 메인 에이전트가 직접 검색, Node 없으면 순수 Grep/Read 폴백까지 동작
+- **Git이 곧 DB**: PR 리뷰·`git blame` 가능, 모든 agent가 `git pull`로 동기화
+- **학습 루프**: `learnings`의 `cause/fix/lesson`으로 실패 반복 방지
+
+## ✍️ Made by
+
+**Muse Spark 1.2 Agent** (`opencode/muse-spark-1.2-contributor-free`, Meta Muse Spark via OpenCode) — 설계·구현·벤치마크·후기(`REVIEW.md`) 전부 이 에이전트가 직접 수행. 환경 상세는 `AGENT.md` `docs/agent-environment.md`.
 
 ## 빠른 시작
 
@@ -78,27 +96,32 @@ agent-context/
  ├─ graph.json                     # L2 — depends_on/affects/edges
  ├─ features.json                  # L2 — label/files/description
  ├─ schema.json                    # frontmatter JSON Schema (draft-07, fluid type/level)
+ ├─ CURRENT.md                     # ★ 새 세션 진입점 (~50tok) — 핸드오프 포인터
  ├─ README.md                      # 프로젝트별 진입점 (템플릿)
  ├─ notes/  ideas/  learnings/  bugs/  decisions/  diary/  todos/  code-history/  archive/
- ├─ sessions/                      # LIVE — sessions.json + inbox/<name>.jsonl (file inbox)
- │  └─ inbox/                      # per-session file inbox
+ ├─ sessions/                      # LIVE — sessions.json + inbox/ + handoff/ (세션 연속성)
+ │  ├─ inbox/                      # per-session file inbox
+ │  └─ handoff/                    # 세션 종료 시 포인터 번들 (압축 대체)
+ ├─ CURRENT.md                     # 새 세션이 가장 먼저 읽는 ~50tok 진입점
  └─ radio/                         # LIVE — threads/<name>.json
     └─ threads/                    # create_thread / send_message / wait_for_mention
 tools/
  ├─ agent-context-index.mjs        # --init/--check/--to-sqlite, level auto-assign
  ├─ agent-context-validate.mjs     # frontmatter lint (fluid type/level)
  ├─ agent-context-init.mjs         # npx 진입점
- ├─ agent-search-lite.mjs          # ★ lightweight AI search (hierarchical, 0 LLM)
+ ├─ agent-search-lite.mjs          # ★ lightweight AI search (hierarchical, 0 LLM, 메인 에이전트 직접 실행)
+ ├─ agent-handoff.mjs              # ★ 세션 연속성 — save/load/list (압축 대체)
  ├─ agent-sessions.mjs             # LIVE — session coordination (file inbox)
  ├─ agent-radio.mjs                # LIVE — passive awareness (file threads)
- └─ benchmark.mjs                  # ★ benchmark (synthetic 5/50/500, public-standard)
+ ├─ benchmark.mjs                  # ★ benchmark (synthetic 5/50/500, public-standard)
+ └─ benchmark-resume.mjs           # ★ session resume benchmark (handoff vs compaction vs full)
 templates/frontmatter/             # learning/bug/decision/diary 템플릿 (level 포함)
-docs/                              # protocol/schema/storage/agent-environment/radio/sessions/hierarchy/benchmark
+docs/                              # protocol/schema/storage/hierarchy/session-continuity/radio/sessions/benchmark
 .claude/skills/agent-shared-context/ # Claude Code skill (네이티브)
 skills/agent-shared-context/      # OpenCode/Codex skill (네이티브)
-BENCHMARK.md                       # ★ benchmark 결과 (objective, critical, reproducible)
+BENCHMARK.md                       # ★ benchmark 결과 + 세션 복원 비교
 REVIEW.md                          # ★ Muse Spark 1.2 Agent 후기 (직접 써본 체감)
-REFERENCES.md                      # attribution (Apache 2.0)
+REFERENCES.md                      # attribution
 examples/                          # nextjs-app / python-cli
 ```
 
@@ -225,17 +248,15 @@ CI는 `.github/workflows/ci.yml`에서 이 5종(validate+index+sessions+radio+sk
 - **Session collaboration patterns** — contemporary inter-agent messaging (session discovery, inbox, inbound policies) 개념을 참고해 `tools/agent-sessions.mjs` `docs/sessions.md`에 file-based `sessions/inbox/*.jsonl`로 구현. See `REFERENCES.md`.
 - 전체 귀속은 `REFERENCES.md`에 정리.
 
-## Agent Model & Environment (이 DB를 만든 주체)
+## Agent Model & Environment
 
-- **Model**: `muse-spark-1.2-contributor-free` (Meta Muse Spark, via OpenCode / opencode/muse-spark-1.2-contributor-free)
+- **Author**: **Muse Spark 1.2 Agent** — `muse-spark-1.2-contributor-free` (Meta Muse Spark, via OpenCode / `opencode/muse-spark-1.2-contributor-free`). 설계·구현·벤치마크·후기 전부 직접 수행.
 - **Knowledge cutoff**: 2026-01-04 / Today 2026-08-26 (UTC)
-- **Work environment**: `OpenCode` on `linux (bash)`, workspace `/tmp/agent-context-universal`, is git repo `yes`, platform `linux`
-- **Skills**: `customize-opencode` (for opencode config)
-- **Tools available**: `bash`, `read`, `edit`, `write`, `glob`, `grep`, `task` (explore/general subagents)
-- **정본 확인**: 매 작업 `git fetch origin` `git log --oneline origin/main -5` `git rev-parse HEAD && origin/main` 기준
-- **검증**: `node tools/agent-context-validate.mjs` `node tools/agent-context-index.mjs --check` (env: Node ≥18)
+- **Work environment**: `OpenCode` on `linux (bash)`, git repo, platform `linux`
+- **Tools used**: `bash`, `read`, `edit`, `write`, `glob`, `grep` (+`task` for parallel research only)
+- **검증**: `node tools/agent-context-validate.mjs` `node tools/agent-context-index.mjs --check` `node tools/benchmark.mjs` (env: Node ≥18)
 
-이 DB는 위 모델·환경에서 생성되었으며, 모든 에이전트(Claude/Codex/Opencode)가 동일한 `agent-shared-context` 프로토콜로 읽고 쓸 수 있다.
+이 DB는 위 모델·환경에서 생성되었으며, 모든 에이전트(Claude/Codex/OpenCode)가 동일한 프로토콜로 읽고 쓸 수 있다.
 
 ## 출처
 

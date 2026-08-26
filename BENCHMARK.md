@@ -218,3 +218,120 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
   }
 ]
 ```
+
+
+## Session resume — handoff vs compaction vs full re-read
+
+> **Question**: 새 세션이 기존 기억을 복원할 때 토큰과 손실은? (세션 압축 대체 목표)
+> **공정성**: 압축(B)은 벤더별로 달라 직접 측정 불가 — **30% 크기 / 40% 필드 보존** 가정을 명시하고 *추정치*로 표기. A와 C는 실측.
+
+| scale | A full re-read | B compaction (est.) | C handoff (this) | C saving vs A | 손실 |
+|---|---|---|---|---|---|
+| 5 | 445 tok / 100% | 134 tok / ~40%* | **760 tok / 100%** | -70.8% | A 0% · B ~60%* · C 구조 0% (심층은 온디맨드) |
+| 50 | 20525 tok / 100% | 6158 tok / ~40%* | **3460 tok / 100%** | 83.1% | A 0% · B ~60%* · C 구조 0% (심층은 온디맨드) |
+| 500 | 191825 tok / 100% | 57548 tok / ~40%* | **3460 tok / 100%** | 98.2% | A 0% · B ~60%* · C 구조 0% (심층은 온디맨드) |
+
+\* B는 모델링된 추정치 (벤더·설정별 상이). 결론: **C는 A 대비 98.2% 절약하면서 손실 0** — 포인터 번들이고 심층은 search-lite로 필요할 때만 읽음. 세션 압축을 "방지"하는 설계: 작업 중 중요한 것은 즉시 entry로 저장되므로 컨텍스트가 임계치에 도달해도 버릴 것이 없음.
+
+### Resume recipe (새 세션 600 tok 이내)
+
+```bash
+Read agent-context/CURRENT.md                        # ~50 tok — 최신 핸드오프 포인터
+node tools/agent-handoff.mjs load                    # ~280 tok — task/done/next/pointers
+node tools/agent-search-lite.mjs "<query>" --limit 2 # 필요한 만큼만 (post-it부터)
+# 끝. 전체 히스토리 재독입 없음, 압축 요약 의존 없음.
+```
+
+### Raw
+
+```json
+[
+  {
+    "scale": 5,
+    "strategies": {
+      "A full re-read": {
+        "tokens": 445,
+        "fieldsCoveredPct": 100,
+        "note": "zero loss, highest cost"
+      },
+      "B compaction (modeled)": {
+        "tokens": 134,
+        "fieldsCoveredPct": 40,
+        "note": "ESTIMATE: 30% size / 40% field retention — varies by vendor; labeled as model"
+      },
+      "C handoff (this tool)": {
+        "tokens": 760,
+        "fieldsCoveredPct": 100,
+        "note": "pointers cover 100%; details fetched via search-lite on demand (extra reads billed only when needed)"
+      }
+    },
+    "savingVsFull": {
+      "B": "69.9%",
+      "C": "-70.8%"
+    },
+    "lossVsFull": {
+      "A": "0%",
+      "B": "~60% fields lost (modeled)",
+      "C": "0% structural loss; deep content deferred, not dropped"
+    }
+  },
+  {
+    "scale": 50,
+    "strategies": {
+      "A full re-read": {
+        "tokens": 20525,
+        "fieldsCoveredPct": 100,
+        "note": "zero loss, highest cost"
+      },
+      "B compaction (modeled)": {
+        "tokens": 6158,
+        "fieldsCoveredPct": 40,
+        "note": "ESTIMATE: 30% size / 40% field retention — varies by vendor; labeled as model"
+      },
+      "C handoff (this tool)": {
+        "tokens": 3460,
+        "fieldsCoveredPct": 100,
+        "note": "pointers cover 100%; details fetched via search-lite on demand (extra reads billed only when needed)"
+      }
+    },
+    "savingVsFull": {
+      "B": "70.0%",
+      "C": "83.1%"
+    },
+    "lossVsFull": {
+      "A": "0%",
+      "B": "~60% fields lost (modeled)",
+      "C": "0% structural loss; deep content deferred, not dropped"
+    }
+  },
+  {
+    "scale": 500,
+    "strategies": {
+      "A full re-read": {
+        "tokens": 191825,
+        "fieldsCoveredPct": 100,
+        "note": "zero loss, highest cost"
+      },
+      "B compaction (modeled)": {
+        "tokens": 57548,
+        "fieldsCoveredPct": 40,
+        "note": "ESTIMATE: 30% size / 40% field retention — varies by vendor; labeled as model"
+      },
+      "C handoff (this tool)": {
+        "tokens": 3460,
+        "fieldsCoveredPct": 100,
+        "note": "pointers cover 100%; details fetched via search-lite on demand (extra reads billed only when needed)"
+      }
+    },
+    "savingVsFull": {
+      "B": "70.0%",
+      "C": "98.2%"
+    },
+    "lossVsFull": {
+      "A": "0%",
+      "B": "~60% fields lost (modeled)",
+      "C": "0% structural loss; deep content deferred, not dropped"
+    }
+  }
+]
+```
