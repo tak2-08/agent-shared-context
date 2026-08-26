@@ -192,6 +192,35 @@
       "diary",
       "bookshelf",
       "library"
-    ]
+    ],
+    "synonyms": {
+      "jwt": [
+        "token"
+      ],
+      "token": [
+        "jwt"
+      ],
+      "auth": [
+        "authentication",
+        "인증"
+      ],
+      "authentication": [
+        "auth"
+      ],
+      "bug": [
+        "issue",
+        "버그"
+      ],
+      "issue": [
+        "bug"
+      ],
+      "race": [
+        "경쟁조건"
+      ],
+      "pagination": [
+        "페이지네이션",
+        "cursor"
+      ]
+    }
   }
 }
