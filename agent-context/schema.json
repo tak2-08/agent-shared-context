@@ -174,6 +174,25 @@
         "type": "string"
       },
       "description": "결과 중심 기록 — 검증 링크(문서·코드 경로). 도구 실행 로그 대신 결론+링크만 저장"
+    },
+    "epistemic": {
+      "type": "string",
+      "enum": [
+        "observed",
+        "inferred",
+        "hypothesis",
+        "verified",
+        "deprecated"
+      ],
+      "description": "인식 상태 — 관찰/추론/가설/검증됨/폐기. 기억 신뢰도 구분"
+    },
+    "source": {
+      "type": "string",
+      "description": "근거 출처 (파일:라인, PR, 대화 등)"
+    },
+    "verified_by": {
+      "type": "string",
+      "description": "검증한 에이전트·사람"
     }
   }
 }

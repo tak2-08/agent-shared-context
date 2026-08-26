@@ -3,7 +3,7 @@
 // agent-context/*.md frontmatter → index.json + graph.json 갱신 (universal, config-aware)
 // 사용: node tools/agent-context-index.mjs [--check] [--init] [--config <path>] [--dry-run] [--to-sqlite]
 
-import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync, existsSync, renameSync } from 'node:fs';
 import { join, relative, dirname } from 'node:path';
 
 function parseArgs() {
@@ -388,7 +388,11 @@ if (ARGS.toSqlite) {
   // TODO: implement actual FTS5 creation when dependency available
 }
 
-writeFileSync(INDEX_PATH, JSON.stringify(nextIndex, null, 2) + '\n', 'utf8');
+// Issue(external review #8) fix: atomic write — concurrent agents never see a torn index.json.
+// tmp+rename is atomic on POSIX; readers either get the old or the new file, never partial.
+const tmpPath = INDEX_PATH + '.tmp-' + process.pid;
+writeFileSync(tmpPath, JSON.stringify(nextIndex, null, 2) + '\n', 'utf8');
+renameSync(tmpPath, INDEX_PATH);
 console.log(`index.json regenerated: ${entries.length} entries, ${totalChars} chars, should_compress=${shouldCompress}`);
 console.log(`root: ${ROOT} (${ROOT_SOURCE})`);
 

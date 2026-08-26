@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-08-26T09:51:47.664Z",
+  "generated_at": "2026-08-26T11:02:08.983Z",
   "generated_by": "agent-context-index.mjs",
   "_path": "agent-context/index.json",
   "description": "L1 압축 카탈로그 — 저용량 에이전트가 가장 먼저 읽는 파일. preview 60자 + summary 120자로 본문 Read 없이 관련성 판단.",
@@ -8,14 +8,62 @@
     "soft_limit_chars": 200000,
     "max_entries": 1000,
     "should_compress": false,
-    "total_chars": 1117,
-    "total_entries": 1
+    "total_chars": 1980,
+    "total_entries": 3
   },
   "counts": {
+    "learning": 1,
+    "note": 1,
     "handoff": 1,
-    "total": 1
+    "total": 3
   },
   "entries": [
+    {
+      "id": "learning-20260826-aaa11111",
+      "type": "learning",
+      "level": "memo",
+      "title": "JWT race condition",
+      "tags": [
+        "auth",
+        "jwt"
+      ],
+      "feature": "auth",
+      "scope": "global",
+      "agent": "claude",
+      "created": "2026-08-26T11:00:26.279Z",
+      "updated": "2026-08-26T11:00:26.280Z",
+      "status": "done",
+      "priority": 5,
+      "summary": "JWT refresh race → mutex 해결. 검증: src/auth/refresh.ts:42",
+      "preview": "JWT refresh race → mutex 해결. 검증: src/auth/refresh.ts:42",
+      "path": "learnings/2026-08-26-jwt-race--claude.md",
+      "related": [],
+      "affects": [],
+      "chars": 429
+    },
+    {
+      "id": "note-20260826-a72de388",
+      "type": "note",
+      "level": "memo",
+      "title": "API moved",
+      "tags": [
+        "note",
+        "api"
+      ],
+      "feature": "api",
+      "scope": "global",
+      "agent": "claude",
+      "created": "2026-08-26T11:00:26.070Z",
+      "updated": "2026-08-26T11:00:26.070Z",
+      "status": "done",
+      "priority": 5,
+      "summary": "API moved to /v2/items — post-it test",
+      "preview": "API moved to /v2/items — post-it test",
+      "path": "notes/2026-08-26-api-moved--claude.md",
+      "related": [],
+      "affects": [],
+      "chars": 434
+    },
     {
       "id": "handoff-20260826-khd31lw6",
       "type": "handoff",

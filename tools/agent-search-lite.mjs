@@ -1,76 +1,87 @@
 #!/usr/bin/env node
 // Path: tools/agent-search-lite.mjs
-// Lightweight AI search — hierarchical, fluid, 0 LLM calls, 0 install cost
-// Inspired by AI accelerator cache hierarchy: post-it (L1) → memo (HBM) → diary (DRAM) → bookshelf (SSD) → library (cold)
-// Search engine (&AI)[post-it|memo|diary|bookshelf|library] — 가벼운 AI가 질의 분석해 가장 작은 레벨부터 탐색, 히트 시 중단
+// Hierarchical search + level assignment — rule-based heuristic, 0 LLM calls, 0 install.
+// (표현 정리: "가벼운 AI" = 규칙 기반 휴리스틱 라우터. 외부 리뷰 지적을 반영해
+//  문서·출력에서 AI 과장 표현을 휴리스틱으로 명확히 한다.)
+// Cache-hierarchy metaphor: post-it (L1) → memo (HBM) → diary (DRAM) → bookshelf (SSD) → library (cold)
+//
+// Issue(external review) fixes:
+//  - --assign was print-only; docs claimed it saves. Now --save actually creates an entry.
+//  - Synonym expansion: query tokens expand via config `search.synonyms` (still 0 LLM)
+//
 // Usage:
-//   node tools/agent-search-lite.mjs "auth jwt race" [--level post-it] [--limit 3] [--json]
-//   node tools/agent-search-lite.mjs --assign --content "some text" --priority 5
+//   node tools/agent-search-lite.mjs "query" [--level L] [--limit N] [--json]
+//   node tools/agent-search-lite.mjs --assign --content "text" --priority 5
+//   node tools/agent-search-lite.mjs --assign --save --title "T" --content "body..." \
+//        --type issue --feature auth --agent claude [--priority 5] [--refs "a,b"]
 //   node tools/agent-search-lite.mjs --benchmark
 
-import { readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { spawnSync } from 'node:child_process';
 
 function resolveConfig() {
   const cands = [
+    join(process.cwd(), 'agent-context.config.json'),
     new URL('../agent-context.config.json', import.meta.url).pathname,
-    new URL('../agent-context/agent-context.config.json', import.meta.url).pathname,
   ];
   for (const p of cands) if (existsSync(p)) return JSON.parse(readFileSync(p, 'utf8'));
-  return { contextRoot: 'agent-context', hierarchy: { levels: { 'post-it': { tokens: 15 }, memo: { tokens: 50 }, diary: { tokens: 200 }, bookshelf: { tokens: 1000 }, library: { tokens: 5000 } }, searchOrder: ['post-it','memo','diary','bookshelf','library'] } };
+  return { contextRoot: 'agent-context' };
 }
 const CONFIG = resolveConfig();
-// Issue #3 fix: cwd-first — operate on the user's project, fall back to script-relative only inside the source repo
 const ROOT = (existsSync(join(process.cwd(), 'agent-context.config.json')) || existsSync(join(process.cwd(), CONFIG.contextRoot || 'agent-context')))
   ? join(process.cwd(), CONFIG.contextRoot || 'agent-context')
   : new URL(`../${CONFIG.contextRoot || 'agent-context'}`, import.meta.url).pathname;
 const INDEX_PATH = join(ROOT, 'index.json');
 
 const LEVELS = CONFIG.hierarchy?.levels || {
-  'post-it': { tokens: 15 },
-  memo: { tokens: 50 },
-  diary: { tokens: 200 },
-  bookshelf: { tokens: 1000 },
-  library: { tokens: 5000 },
+  'post-it': { tokens: 15 }, memo: { tokens: 50 }, diary: { tokens: 200 },
+  bookshelf: { tokens: 1000 }, library: { tokens: 5000 },
 };
 const ORDER = CONFIG.hierarchy?.searchOrder || ['post-it','memo','diary','bookshelf','library'];
 const LEVEL_RANK = Object.fromEntries(ORDER.map((k,i)=>[k,i]));
+// Issue(external review P0-recall) fix: config-driven synonym expansion, still 0 LLM
+const SYNONYMS = CONFIG.search?.synonyms || {};
 
 function parseArgs() {
   const a = process.argv.slice(2);
-  const out = { query: null, level: null, limit: 5, json: false, assign: false, content: null, priority: 3, benchmark: false, help: false };
+  const out = { query: null, level: null, limit: 5, json: false, assign: false, save: false,
+                content: null, priority: 3, title: null, type: 'note', feature: 'global',
+                agent: 'system', refs: null, benchmark: false, help: false };
   for (let i=0;i<a.length;i++) {
     const v=a[i];
     if (v==='--level') out.level=a[++i];
     else if (v==='--limit') out.limit=Number(a[++i]);
     else if (v==='--json') out.json=true;
     else if (v==='--assign') out.assign=true;
+    else if (v==='--save') out.save=true;
     else if (v==='--content') out.content=a[++i];
     else if (v==='--priority') out.priority=Number(a[++i]);
+    else if (v==='--title') out.title=a[++i];
+    else if (v==='--type') out.type=a[++i];
+    else if (v==='--feature') out.feature=a[++i];
+    else if (v==='--agent') out.agent=a[++i];
+    else if (v==='--refs') out.refs=a[++i];
     else if (v==='--benchmark') out.benchmark=true;
-    else if (v==='--help' || v==='-h') out.help=true;
+    else if (v==='--help'||v==='-h') out.help=true;
     else if (!v.startsWith('--') && out.query===null && !out.assign) out.query=v;
   }
   return out;
 }
 
 function assignLevel(content, priority=3, affects=[]) {
-  // Lightweight AI: rule-based, 0 LLM calls, 0 tokens
-  // Inspired by cache hierarchy: small→large, priority and affects push to larger level
   const len = content.length;
   const aff = Array.isArray(affects) ? affects.length : 0;
-  if (len <= 30 && priority >=4 && aff===0) return 'post-it'; // L1 cache — one-liner, high priority, no affect
-  if (len <= 80 && priority >=3) return 'memo'; // HBM
-  if (len <= 400) return 'diary'; // DRAM
-  if (len <= 2000 || aff >=2) return 'bookshelf'; // SSD
-  return 'library'; // cold
+  if (len <= 30 && priority >=4 && aff===0) return 'post-it';
+  if (len <= 80 && priority >=3) return 'memo';
+  if (len <= 400) return 'diary';
+  if (len <= 2000 || aff >=2) return 'bookshelf';
+  return 'library';
 }
 
 function estimateLevel(entry) {
-  // If entry has level, use it; else estimate from chars/summary length (backward compat)
   if (entry.level && LEVEL_RANK[entry.level]!==undefined) return entry.level;
   const len = entry.chars || (entry.summary?.length || 0) + (entry.title?.length||0);
-  // Rough: chars 50 → post-it, 150 → memo, 600 → diary, 2500 → bookshelf, else library
   if (len <= 80) return 'post-it';
   if (len <= 250) return 'memo';
   if (len <= 800) return 'diary';
@@ -78,9 +89,7 @@ function estimateLevel(entry) {
   return 'library';
 }
 
-function lightweightAIAssignLevelForQuery(query) {
-  // Like hierarchy doc: query token count + keyword count decides starting level
-  // 1 word → post-it, short phrase → memo, sentence → diary, "overall flow" → bookshelf/library
+function lightweightAssignLevelForQuery(query) {
   const q = query.toLowerCase();
   const words = q.trim().split(/\s+/).filter(Boolean).length;
   if (q.includes('overall') || q.includes('전체') || q.includes('architecture') || q.includes('아키텍처')) return 'bookshelf';
@@ -115,9 +124,9 @@ async function semanticScoresIfEnabled(query, entries){
 }
 
 async function search(query, opts={}) {
-  const index = JSON.parse(readFileSync(INDEX_PATH,'utf8'));
+  let index; try { index = JSON.parse(readFileSync(INDEX_PATH,'utf8')); } catch { index = { entries: [] }; }
   const entries = index.entries || [];
-  const requestedLevel = opts.level || lightweightAIAssignLevelForQuery(query);
+  const requestedLevel = opts.level || lightweightAssignLevelForQuery(query);
   const startRank = LEVEL_RANK[requestedLevel] ?? 0;
   // Hierarchical: only levels from requestedLevel up to library? Actually search from smallest up to requestedLevel?
   // Our hierarchy searchOrder is small→large, we start at requestedLevel and expand upward if needed
@@ -151,7 +160,6 @@ async function search(query, opts={}) {
       const days = (Date.now() - new Date(e.updated).getTime())/86400000;
       if (days < 7) recency=1; else if (days < 30) recency=0.8;
     } catch {}
-    // Final: weighted
     const score = hitScore*0.5 - levelDistance*0.1 + priorityScore*0.2 + recency*0.1;
     const estTokens = LEVELS[lev]?.tokens || 200;
     return { entry:e, lev, levRank, levelDistance, hitScore, priorityScore, recency, score, estTokens };
@@ -179,7 +187,7 @@ async function search(query, opts={}) {
   return {
     query,
     assignedLevel: requestedLevel,
-    lightweightAI: { reason: `query ${qTokens.length} words → ${requestedLevel} (hierarchical cache)`, noLLM: true, zeroTokens: true },
+    router: { type: 'rule-based heuristic (no LLM)', reason: `${rawTokens.length} words → ${requestedLevel}`, expandedTokens: qTokens.length - rawTokens.length },
     order: ORDER,
     totalEntries: entries.length,
     evaluated: scored.length,
@@ -191,11 +199,52 @@ async function search(query, opts={}) {
   };
 }
 
-const ARGS = parseArgs();
-if (ARGS.help) {
-  console.log(`Usage:
-  node tools/agent-search-lite.mjs "query" [--level post-it|memo|diary|bookshelf|library] [--limit 5] [--json]
+function saveEntry(o) {
+  // Issue(external review) fix: --assign previously printed only; --save now writes a real entry
+  const dirMap = { issue:'bugs', bug:'bugs', learning:'learnings', idea:'ideas', note:'notes',
+    decision:'decisions', diary:'diary', todo:'todos', memo:'notes', 'work-history':'code-history', 'overall-flow':'notes' };
+  const dir = join(ROOT, dirMap[o.type] || 'notes');
+  mkdirSync(dir, { recursive: true });
+  const date = new Date().toISOString().slice(0,10);
+  const fname = `${date}-${String(o.title||o.content).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)}--${o.agent}.md`;
+  const path = join(dir, fname);
+  const level = o.computedLevel;
+  const refs = o.refs ? o.refs.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  const md = [
+    `<!-- Path: agent-context/${dir.split('/').pop()}/${fname} -->`,
+    '---',
+    `id: ${o.type}-${date.replace(/-/g,'')}-${Math.random().toString(16).slice(2,10)}`,
+    `type: ${o.type}`,
+    `level: ${level}`,
+    `title: "${String(o.title||o.content).slice(0,80)}"`,
+    `tags: [${o.type}, ${o.feature}]`,
+    `feature: ${o.feature}`,
+    `scope: global`,
+    `agent: ${o.agent}`,
+    `created: ${new Date().toISOString()}`,
+    `updated: ${new Date().toISOString()}`,
+    `status: done`,
+    `priority: ${o.priority}`,
+    `summary: "${String(o.content).slice(0,180)}"`,
+    ...(refs.length ? ['refs:', ...refs.map(r=>`  - "${r}"`)] : []),
+    '---','',
+    `## 결과\n\n${o.content}\n`,
+    `\n<!-- outcome-based: 결론만 저장, 검증은 refs -->`,
+  ].join('\n')+'\n';
+  writeFileSync(path, md, 'utf8');
+  // regenerate index so the new entry is searchable immediately
+  const idxSrc = new URL('./agent-context-index.mjs', import.meta.url).pathname;
+  spawnSync(process.execPath, [idxSrc], { stdio: 'inherit' });
+  return { saved: true, path, level, tokens: LEVELS[level]?.tokens };
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const ARGS = parseArgs();
+  if (ARGS.help) {
+    console.log(`Usage:
+  node tools/agent-search-lite.mjs "query" [--level L] [--limit N] [--json]
   node tools/agent-search-lite.mjs --assign --content "text" --priority 5
+  node tools/agent-search-lite.mjs --assign --save --title "T" --content "결론..." --type issue --feature auth [--agent claude] [--priority 5] [--refs "a,b"]
   node tools/agent-search-lite.mjs --benchmark
 Lightweight AI: rule-based, 0 LLM calls, 0 tokens, hierarchical post-it→library like cache→HBM→DRAM→SSD`);
   process.exit(0);
