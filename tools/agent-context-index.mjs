@@ -22,8 +22,13 @@ function parseArgs() {
 }
 
 function resolveConfig(explicit) {
+  // Issue #3 fix: cwd-first resolution (see ROOT below). Default contextRoot here
+  // is the literal until config loads — actual root resolved after.
+  const cwd = process.cwd();
   const candidates = [
     explicit,
+    join(cwd, 'agent-context.config.json'),
+    join(cwd, 'agent-context', 'agent-context.config.json'),
     new URL('../agent-context.config.json', import.meta.url).pathname,
     new URL('../agent-context/agent-context.config.json', import.meta.url).pathname,
   ].filter(Boolean);
@@ -68,7 +73,16 @@ if (ARGS.help) {
 
 const { path: CONFIG_PATH, data: CONFIG } = resolveConfig(ARGS.config);
 const CONTEXT_ROOT = CONFIG.contextRoot || 'agent-context';
-const ROOT = new URL(`../${CONTEXT_ROOT}`, import.meta.url).pathname;
+// Issue #3 fix: operate on process.cwd() (user project) when it has a config or
+// the context directory; fall back to script-relative only for repo self-checks
+// (CI runs from repo root, where cwd already contains agent-context/).
+const cwdHasContext =
+  existsSync(join(process.cwd(), 'agent-context.config.json')) ||
+  existsSync(join(process.cwd(), CONTEXT_ROOT));
+const ROOT = cwdHasContext
+  ? join(process.cwd(), CONTEXT_ROOT)
+  : new URL(`../${CONTEXT_ROOT}`, import.meta.url).pathname;
+const ROOT_SOURCE = cwdHasContext ? 'process.cwd()' : 'script-relative (source repo fallback)';
 const INDEX_PATH = join(ROOT, 'index.json');
 const GRAPH_PATH = join(ROOT, 'graph.json');
 const FEATURES_PATH = join(ROOT, 'features.json');
@@ -258,7 +272,7 @@ if (ARGS.init) {
   for (const [p, exp] of toWrite) {
     // merge: if exists, keep files field? for now overwrite with config-driven
     writeFileSync(p, JSON.stringify(exp, null, 2) + '\n', 'utf8');
-    console.log(`scaffolded ${relative(dirname(ROOT), p)}`);
+    console.log(`scaffolded ${p} (absolute)`);
   }
   if (!drift.length) console.log('already up-to-date');
   // continue to index regeneration after scaffold
@@ -376,6 +390,7 @@ if (ARGS.toSqlite) {
 
 writeFileSync(INDEX_PATH, JSON.stringify(nextIndex, null, 2) + '\n', 'utf8');
 console.log(`index.json regenerated: ${entries.length} entries, ${totalChars} chars, should_compress=${shouldCompress}`);
+console.log(`root: ${ROOT} (${ROOT_SOURCE})`);
 
 // bump graph.json timestamp
 try {

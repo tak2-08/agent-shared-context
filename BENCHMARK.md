@@ -1,8 +1,9 @@
 <!-- Path: BENCHMARK.md -->
 # Benchmark — Hierarchical Lightweight Search vs Full Read
 
-> **Objective, public-standard-like, critical, reproducible** — synthetic 5/50/500 scale, 20 queries, tokens = chars/4, hit = query tokens in title/tags/summary, latency = search vs est. full Read, no LLM.
-
+> **Objective, public-standard-like, critical, reproducible** — synthetic 5/50/500 scale, 20 queries, **fixed seed (--seed 42)**, tokens = chars/4, hit = query tokens in title/tags/summary, latency = search vs est. full Read, no LLM.
+>
+> **Issue #3 반영**: (1) 시드 고정으로 동일 커맨드 재실행 시 동일 결과 보장 (2) miss 쿼리는 "saving 100%"이 아니라 **n/a (miss)**로 표기 — 실패한 검색을 절약으로 과장하지 않음 (3) avg saving은 히트 기준만 집계.
 ## Method (close to public standard)
 
 - **Dataset**: Synthetic 5 + 50 + 500 entries, distribution 40% post-it (15tok) 30% memo (50tok) 15% diary (200tok) 10% bookshelf (1000tok) 5% library (5000tok) — like cache workloads, not cherry-picked.
@@ -16,25 +17,25 @@
 
 | scale | full tokens | avg top 3 tokens | avg saving | hitRate | avg latency (search) | est. full Read latency | tokens/hit |
 |---|---|---|---|---|---|---|
-| 5 | 5280 | 1040 | 80.3% | 80.0% | 0.18ms | 0.25ms (est. Read all md) | 1300 |
-| 50 | 25580 | 1758 | 93.1% | 85.0% | 0.35ms | 2.50ms (est. Read all md) | 2068 |
-| 500 | 194800 | 2003 | 99.0% | 85.0% | 1.98ms | 25.00ms (est. Read all md) | 2357 |
+| 5 | 1315 | 178 | 83.1% | 80.0% | 0.09ms | 0.25ms (est. Read all md) | 223 |
+| 50 | 16780 | 761 | 94.7% | 85.0% | 0.37ms | 2.50ms (est. Read all md) | 895 |
+| 500 | 197940 | 1883 | 98.9% | 85.0% | 1.92ms | 25.00ms (est. Read all md) | 2216 |
 
 ### Interpretation (critical, not hype)
 
-- **5 entries** (current repo): `full  ~5280tok` vs `top ~1040tok` → saving **80.3%** but absolute saving small — overhead of hierarchy not yet amortized. At small scale, full Read is also cheap; hierarchical still wins on **latency** (`post-it` first, no need to parse large).
-- **50 entries** (team, 1 month): saving **93.1%** with **85.0%** hitRate — like cache 90% hit, 10% miss expands to larger levels. This is the sweet spot: 50×200 avg ~10k full vs ~1758 top.
-- **500 entries** (project, 6 months): saving **99.0%** — like library scale, hierarchical is **99%** saving, but hitRate drops to **85.0%** if queries are too narrow (e.g., `post-it` query misses `library` content). **Tradeoff**: narrow query → high saving but lower hit, broad query → lower saving but higher hit. Our lightweight AI chooses starting level from query length to balance.
+- **5 entries** (current repo): `full  ~1315tok` vs `top ~178tok` → saving **83.1%** but absolute saving small — overhead of hierarchy not yet amortized. At small scale, full Read is also cheap; hierarchical still wins on **latency** (`post-it` first, no need to parse large).
+- **50 entries** (team, 1 month): saving **94.7%** with **85.0%** hitRate — like cache 90% hit, 10% miss expands to larger levels. This is the sweet spot: 50×200 avg ~10k full vs ~761 top.
+- **500 entries** (project, 6 months): saving **98.9%** — like library scale, hierarchical is **99%** saving, but hitRate drops to **85.0%** if queries are too narrow (e.g., `post-it` query misses `library` content). **Tradeoff**: narrow query → high saving but lower hit, broad query → lower saving but higher hit. Our lightweight AI chooses starting level from query length to balance.
 
 ### Sample per-query (scale 50)
 
 | query | assignedLevel | top tokens | saving | hit | latency |
 |---|---|---|---|---|
-| auth | post-it | 80 | 99.7% | ✅ | 0.36ms |
-| api | post-it | 115 | 99.6% | ✅ | 0.40ms |
-| jwt | post-it | 0 | 100.0% | ❌ | 0.30ms |
-| pagination | post-it | 0 | 100.0% | ❌ | 1.12ms |
-| cache | post-it | 0 | 100.0% | ❌ | 0.20ms |
+| auth | post-it | 45 | 99.7% | ✅ | 1.31ms |
+| api | post-it | 80 | 99.5% | ✅ | 0.36ms |
+| jwt | post-it | 0 | n/a (miss) | ❌ | 0.31ms |
+| pagination | post-it | 0 | n/a (miss) | ❌ | 0.31ms |
+| cache | post-it | 0 | n/a (miss) | ❌ | 0.31ms |
 
 ### What we learned while benchmarking (ideas & shortcomings →补)
 
@@ -60,119 +61,122 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
   {
     "scale": 5,
     "distribution": "40% post-it, 30% memo, 15% diary, 10% bookshelf, 5% library",
-    "fullTokens": 5280,
-    "avgTopTokens": 1040,
-    "avgSaving": "80.3%",
+    "seed": 42,
+    "fullTokens": 1315,
+    "avgTopTokens": 178,
+    "avgSaving": "83.1%",
     "hitRate": "80.0%",
-    "avgLatency": "0.18ms",
+    "avgLatency": "0.09ms",
     "fullLatencyEst": "0.25ms (est. Read all md)",
-    "tokensPerHit": 1300,
+    "tokensPerHit": 223,
     "perQuery": [
       {
         "query": "auth",
         "assignedLevel": "post-it",
-        "topTokens": 15,
-        "saving": "99.7%",
+        "topTokens": 50,
+        "saving": "96.2%",
         "hit": true,
-        "latency": "0.53ms"
+        "latency": "0.48ms"
       },
       {
         "query": "api",
         "assignedLevel": "post-it",
-        "topTokens": 5000,
-        "saving": "5.3%",
+        "topTokens": 15,
+        "saving": "98.9%",
         "hit": true,
-        "latency": "0.50ms"
+        "latency": "0.22ms"
       },
       {
         "query": "jwt",
         "assignedLevel": "post-it",
         "topTokens": 0,
-        "saving": "100.0%",
+        "saving": "n/a (miss)",
         "hit": false,
-        "latency": "0.08ms"
+        "latency": "0.07ms"
       },
       {
         "query": "pagination",
         "assignedLevel": "post-it",
         "topTokens": 0,
-        "saving": "100.0%",
+        "saving": "n/a (miss)",
         "hit": false,
-        "latency": "0.07ms"
+        "latency": "0.05ms"
       },
       {
         "query": "cache",
         "assignedLevel": "post-it",
         "topTokens": 0,
-        "saving": "100.0%",
+        "saving": "n/a (miss)",
         "hit": false,
-        "latency": "0.07ms"
+        "latency": "0.04ms"
       }
     ]
   },
   {
     "scale": 50,
     "distribution": "40% post-it, 30% memo, 15% diary, 10% bookshelf, 5% library",
-    "fullTokens": 25580,
-    "avgTopTokens": 1758,
-    "avgSaving": "93.1%",
+    "seed": 42,
+    "fullTokens": 16780,
+    "avgTopTokens": 761,
+    "avgSaving": "94.7%",
     "hitRate": "85.0%",
-    "avgLatency": "0.35ms",
+    "avgLatency": "0.37ms",
     "fullLatencyEst": "2.50ms (est. Read all md)",
-    "tokensPerHit": 2068,
+    "tokensPerHit": 895,
     "perQuery": [
       {
         "query": "auth",
         "assignedLevel": "post-it",
-        "topTokens": 80,
+        "topTokens": 45,
         "saving": "99.7%",
+        "hit": true,
+        "latency": "1.31ms"
+      },
+      {
+        "query": "api",
+        "assignedLevel": "post-it",
+        "topTokens": 80,
+        "saving": "99.5%",
         "hit": true,
         "latency": "0.36ms"
       },
       {
-        "query": "api",
-        "assignedLevel": "post-it",
-        "topTokens": 115,
-        "saving": "99.6%",
-        "hit": true,
-        "latency": "0.40ms"
-      },
-      {
         "query": "jwt",
         "assignedLevel": "post-it",
         "topTokens": 0,
-        "saving": "100.0%",
+        "saving": "n/a (miss)",
         "hit": false,
-        "latency": "0.30ms"
+        "latency": "0.31ms"
       },
       {
         "query": "pagination",
         "assignedLevel": "post-it",
         "topTokens": 0,
-        "saving": "100.0%",
+        "saving": "n/a (miss)",
         "hit": false,
-        "latency": "1.12ms"
+        "latency": "0.31ms"
       },
       {
         "query": "cache",
         "assignedLevel": "post-it",
         "topTokens": 0,
-        "saving": "100.0%",
+        "saving": "n/a (miss)",
         "hit": false,
-        "latency": "0.20ms"
+        "latency": "0.31ms"
       }
     ]
   },
   {
     "scale": 500,
     "distribution": "40% post-it, 30% memo, 15% diary, 10% bookshelf, 5% library",
-    "fullTokens": 194800,
-    "avgTopTokens": 2003,
-    "avgSaving": "99.0%",
+    "seed": 42,
+    "fullTokens": 197940,
+    "avgTopTokens": 1883,
+    "avgSaving": "98.9%",
     "hitRate": "85.0%",
-    "avgLatency": "1.98ms",
+    "avgLatency": "1.92ms",
     "fullLatencyEst": "25.00ms (est. Read all md)",
-    "tokensPerHit": 2357,
+    "tokensPerHit": 2216,
     "perQuery": [
       {
         "query": "auth",
@@ -180,7 +184,7 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 45,
         "saving": "100.0%",
         "hit": true,
-        "latency": "4.99ms"
+        "latency": "4.01ms"
       },
       {
         "query": "api",
@@ -188,150 +192,33 @@ No API key, no `npm install`, Node ≥18 only — like `agent-search-lite.mjs`.
         "topTokens": 45,
         "saving": "100.0%",
         "hit": true,
-        "latency": "2.67ms"
+        "latency": "2.09ms"
       },
       {
         "query": "jwt",
         "assignedLevel": "post-it",
         "topTokens": 0,
-        "saving": "100.0%",
+        "saving": "n/a (miss)",
         "hit": false,
-        "latency": "1.84ms"
+        "latency": "2.05ms"
       },
       {
         "query": "pagination",
         "assignedLevel": "post-it",
         "topTokens": 0,
-        "saving": "100.0%",
+        "saving": "n/a (miss)",
         "hit": false,
-        "latency": "2.41ms"
+        "latency": "2.48ms"
       },
       {
         "query": "cache",
         "assignedLevel": "post-it",
         "topTokens": 0,
-        "saving": "100.0%",
+        "saving": "n/a (miss)",
         "hit": false,
-        "latency": "1.64ms"
+        "latency": "1.93ms"
       }
     ]
-  }
-]
-```
-
-
-## Session resume — handoff vs compaction vs full re-read
-
-> **Question**: 새 세션이 기존 기억을 복원할 때 토큰과 손실은? (세션 압축 대체 목표)
-> **공정성**: 압축(B)은 벤더별로 달라 직접 측정 불가 — **30% 크기 / 40% 필드 보존** 가정을 명시하고 *추정치*로 표기. A와 C는 실측.
-
-| scale | A full re-read | B compaction (est.) | C handoff (this) | C saving vs A | 손실 |
-|---|---|---|---|---|---|
-| 5 | 445 tok / 100% | 134 tok / ~40%* | **760 tok / 100%** | -70.8% | A 0% · B ~60%* · C 구조 0% (심층은 온디맨드) |
-| 50 | 20525 tok / 100% | 6158 tok / ~40%* | **3460 tok / 100%** | 83.1% | A 0% · B ~60%* · C 구조 0% (심층은 온디맨드) |
-| 500 | 191825 tok / 100% | 57548 tok / ~40%* | **3460 tok / 100%** | 98.2% | A 0% · B ~60%* · C 구조 0% (심층은 온디맨드) |
-
-\* B는 모델링된 추정치 (벤더·설정별 상이). 결론: **C는 A 대비 98.2% 절약하면서 손실 0** — 포인터 번들이고 심층은 search-lite로 필요할 때만 읽음. 세션 압축을 "방지"하는 설계: 작업 중 중요한 것은 즉시 entry로 저장되므로 컨텍스트가 임계치에 도달해도 버릴 것이 없음.
-
-### Resume recipe (새 세션 600 tok 이내)
-
-```bash
-Read agent-context/CURRENT.md                        # ~50 tok — 최신 핸드오프 포인터
-node tools/agent-handoff.mjs load                    # ~280 tok — task/done/next/pointers
-node tools/agent-search-lite.mjs "<query>" --limit 2 # 필요한 만큼만 (post-it부터)
-# 끝. 전체 히스토리 재독입 없음, 압축 요약 의존 없음.
-```
-
-### Raw
-
-```json
-[
-  {
-    "scale": 5,
-    "strategies": {
-      "A full re-read": {
-        "tokens": 445,
-        "fieldsCoveredPct": 100,
-        "note": "zero loss, highest cost"
-      },
-      "B compaction (modeled)": {
-        "tokens": 134,
-        "fieldsCoveredPct": 40,
-        "note": "ESTIMATE: 30% size / 40% field retention — varies by vendor; labeled as model"
-      },
-      "C handoff (this tool)": {
-        "tokens": 760,
-        "fieldsCoveredPct": 100,
-        "note": "pointers cover 100%; details fetched via search-lite on demand (extra reads billed only when needed)"
-      }
-    },
-    "savingVsFull": {
-      "B": "69.9%",
-      "C": "-70.8%"
-    },
-    "lossVsFull": {
-      "A": "0%",
-      "B": "~60% fields lost (modeled)",
-      "C": "0% structural loss; deep content deferred, not dropped"
-    }
-  },
-  {
-    "scale": 50,
-    "strategies": {
-      "A full re-read": {
-        "tokens": 20525,
-        "fieldsCoveredPct": 100,
-        "note": "zero loss, highest cost"
-      },
-      "B compaction (modeled)": {
-        "tokens": 6158,
-        "fieldsCoveredPct": 40,
-        "note": "ESTIMATE: 30% size / 40% field retention — varies by vendor; labeled as model"
-      },
-      "C handoff (this tool)": {
-        "tokens": 3460,
-        "fieldsCoveredPct": 100,
-        "note": "pointers cover 100%; details fetched via search-lite on demand (extra reads billed only when needed)"
-      }
-    },
-    "savingVsFull": {
-      "B": "70.0%",
-      "C": "83.1%"
-    },
-    "lossVsFull": {
-      "A": "0%",
-      "B": "~60% fields lost (modeled)",
-      "C": "0% structural loss; deep content deferred, not dropped"
-    }
-  },
-  {
-    "scale": 500,
-    "strategies": {
-      "A full re-read": {
-        "tokens": 191825,
-        "fieldsCoveredPct": 100,
-        "note": "zero loss, highest cost"
-      },
-      "B compaction (modeled)": {
-        "tokens": 57548,
-        "fieldsCoveredPct": 40,
-        "note": "ESTIMATE: 30% size / 40% field retention — varies by vendor; labeled as model"
-      },
-      "C handoff (this tool)": {
-        "tokens": 3460,
-        "fieldsCoveredPct": 100,
-        "note": "pointers cover 100%; details fetched via search-lite on demand (extra reads billed only when needed)"
-      }
-    },
-    "savingVsFull": {
-      "B": "70.0%",
-      "C": "98.2%"
-    },
-    "lossVsFull": {
-      "A": "0%",
-      "B": "~60% fields lost (modeled)",
-      "C": "0% structural loss; deep content deferred, not dropped"
-    }
   }
 ]
 ```

@@ -87,3 +87,17 @@ cat agent-context/sessions/sessions.json
 ```
 
 Works on macOS/Linux/Windows, any provider.
+
+## 동시 쓰기 충돌 전략 (Issue #3 관찰 반영)
+
+여러 에이전트가 같은 저장소에 쓸 때의 규칙:
+
+| 대상 | 전략 |
+|---|---|
+| `sessions/inbox/<name>.jsonl` | 수신자별 **파일 분리**라 충돌 없음. 각 세션은 자기 inbox만 append |
+| `radio/threads/<name>.json` | 스레드별 파일 분리 + append 지향. 동시 append는 git merge가 라인 단위 해소 |
+| `agent-context/*.md` | **1 PR = 1 파일** 원칙 유지. 서로 다른 파일이면 충돌 없음 |
+| `index.json` | 파생물 — 충돌 시 어느 쪽이든 버리고 `node tools/agent-context-index.mjs` 재생성이 정답. 수동 merge 금지 |
+| `sessions/handoff/*.md` | 세션별 파일 분리 (`<date>--<session>.md`) |
+
+요약: **live 파일은 경로 분리로 회피, persistent md는 1 PR = 1 파일, index.json은 재생성으로 처리.** 실시간 기능과 PR 규칙의 상충은 "live는 커밋하지 않고 로컬 inbox에서 소비, 지식화할 가치가 있는 것만 entry→PR" 순서로 풀린다 (`docs/session-continuity.md` 참조).

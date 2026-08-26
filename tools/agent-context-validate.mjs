@@ -16,7 +16,10 @@ function resolveConfig(explicit) {
 
 const configArgIndex = process.argv.indexOf('--config');
 const CONFIG = resolveConfig(configArgIndex !== -1 ? process.argv[configArgIndex+1] : null);
-const ROOT = new URL(`../${CONFIG.contextRoot || 'agent-context'}`, import.meta.url).pathname;
+// Issue #3 fix: cwd-first — operate on the user's project, fall back to script-relative only inside the source repo
+const ROOT = (existsSync(join(process.cwd(), 'agent-context.config.json')) || existsSync(join(process.cwd(), CONFIG.contextRoot || 'agent-context')))
+  ? join(process.cwd(), CONFIG.contextRoot || 'agent-context')
+  : new URL(`../${CONFIG.contextRoot || 'agent-context'}`, import.meta.url).pathname;
 const SCHEMA_PATH = join(ROOT, 'schema.json');
 
 let schema;
