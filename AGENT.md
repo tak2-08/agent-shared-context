@@ -18,7 +18,7 @@
 - **Is git repo**: `yes` (`.git` 존재, `origin/main` 추적)
 - **Workspace root**: `/workspace` (로컬 개발), 실제 저장소는 `/tmp/agent-context-universal` 스테이징 후 푸시
 - **Node**: `≥18` `php-cli` `python3` (선택) — `tools/agent-context-index.mjs` 실행 환경
-- **정본 확인**: 매 작업 `git fetch origin` `git log --oneline origin/main -5` `git rev-parse HEAD && origin/main` ( `T2Editor-v11/AGENTS.md:10` 규약 준용)
+- **정본 확인**: 매 작업 `git fetch origin` `git log --oneline origin/main -5` `git rev-parse HEAD && origin/main`
 
 ## 사용 가능 도구
 
@@ -34,9 +34,9 @@
 
 ## 이 DB와의 관계
 
-- 이 에이전트는 `T2Editor-v11` `T2Editor/agent-context` (PR #97 `e42e8fd` 16파일 1093라인)를 전수조사·생성한 뒤, 이를 **T2Editor 전용 분석으로 분리**하고, 범용 템플릿만 `agent-shared-context`에 이식했다.
-- `agent-shared-context`의 모든 글은 `id/type/title/tags/feature/agent/created/updated/status/summary` 10필수 + `related/affects/keywords`로 연결되며, `graph.json` `features.json` `index.json` 3종으로 토큰 절약 탐색을 지원한다.
+- 이 저장소는 에이전트 간 공유를 위한 범용 템플릿이다. 모든 `agent-context/` 기록은 `id/type/title/tags/feature/agent/created/updated/status/summary` 10필수 + `related/affects/keywords`로 연결되며, `graph.json` `features.json` `index.json` 3종으로 토큰 절약 탐색을 지원한다.
 - 다음 에이전트는 `Read agent-context/index.json` → `Read graph.json` → `Grep` → `Read md 1~2개` 순으로 이 DB를 소비한다.
+- 생성 시 `agent-context.config.json` 단일 원천으로 `features`/`graph`/`schema`를 일원화했다.
 
 ---
 *Teams can give feedback at https://github.com/anomalyco/opencode mentioning Meta Muse Spark.*

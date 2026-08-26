@@ -6,7 +6,7 @@
 ## 설정
 
 - `contextRoot: "agent-context"` — Next.js 루트에 그대로 둠, `next.config.js`와 충돌 없음
-- `features.ui.files`에 `src/app/globals.css:1` — T2Editor `t2-foundation.css:299` 패턴을 Next.js 토큰 파일로 치환
+- `features.ui.files`에 `src/app/globals.css:1` — 디자인 토큰 예시
 - `storage.backend: json` — Vercel 배포 시 2층 불필요, Git 정본만으로 충분
 
 ## 사용

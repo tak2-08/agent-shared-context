@@ -65,5 +65,5 @@ Glob pattern="agent-context/diary/2026-08-*.md"
 
 ## 참조
 
-- `T2Editor-v11` 원본: `T2Editor/agent-context/README.md:14-36` 동일한 3단계
 - `tools/agent-context-index.mjs --check` 로 drift 감지 (CI에서 필수)
+- `agent-context/README.md` 동일한 3단계

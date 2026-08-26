@@ -14,8 +14,7 @@
 
 - **OS**: `linux` (bash)
 - **Shell**: `bash` persistent session
-- **Workspace**: `/tmp/agent-context-universal` (universal staging), 원격 `tak2-08/agent-shared-context` `origin/main`
-- **T2Editor workspace**: `/workspace/T2Editor-v11` (동시 유지, 정본 `tak2-08/T2Editor-v11` `origin/main` `e42e8fd`)
+- **Workspace**: `/tmp/agent-context-universal` (staging), 원격 `tak2-08/agent-shared-context` `origin/main`
 - **Git**: `git fetch origin` 필수, `gh` 2.98.0, `node` v20.20.2, `npm` (package.json bin)
 - **Is git repo**: yes
 
@@ -23,19 +22,18 @@
 
 - **Available skills**: `customize-opencode` (opencode 설정 전용, `opencode.json` 등)
 - **Tools**: `bash`, `read` (file/dir), `edit` (exact replace), `write` (overwrite), `glob`, `grep`, `task` (explore/general subagents), `question` (사용자 질의)
-- **Verification**: `node --check`, `JSON.parse`, `node tools/t2-static-check.mjs`, `node tools/t2-css-contract.mjs`, `bash tools/t2-release-gate.sh --quick`
+- **Verification**: `node --check`, `JSON.parse`, `node tools/agent-context-validate.mjs`, `node tools/agent-context-index.mjs --check`
 
 ## 정본 규약 준용
 
-- `T2Editor-v11/AGENTS.md:6` “정본은 GitHub — 로컬 opencode 스냅샷이 아니다” → 매 작업 `git fetch origin` `git log --oneline origin/main -5`
-- `AGENTS.md:10-16` 브랜치 전략: `origin/main` 최신 기준 분기, `agent/**`는 CI 제외
-- `AGENTS.md:69` `Path: ...` 주석 보존
-- `AGENTS.md:78` 문서·커밋 한국어 기본
+- “정본은 GitHub — 로컬 스냅샷이 아니다” → 매 작업 `git fetch origin` `git log --oneline origin/main -5`
+- 브랜치 전략: `origin/main` 최신 기준 분기
+- `Path: ...` 주석 보존
+- 문서 커밋 한국어 기본
 
 ## 생성 이력
 
-- **T2Editor DB**: `T2Editor-v11` `T2Editor/agent-context` 16파일 1093라인, `809825c` → PR #97 → `e42e8fd` 머지 (2026-08-26T07:21:52Z)
-- **Universal 추출**: `/tmp/agent-context-universal`에서 `T2Editor/agent-context` → `agent-context`로 복사 후 `T2Editor/` 하드코딩 102곳 제거, `agent-context.config.json` 단일 원천으로 추상화, `examples/t2editor`는 공개 repo에 포함 안 함 (T2Editor에만 분석 결과 저장)
+- **Initial**: `agent-shared-context` 범용 템플릿, `agent-context.config.json` 단일 원천, `agent-context/` 75파일 범용 구조
 - **Rename**: `tak2-08/agent-context` → `tak2-08/agent-shared-context` (2026-08-26, `gh api PATCH /repos/tak2-08/agent-context -f name=agent-shared-context`) — 에이전트 간 공유 목적 명시
 
 ## 다음 에이전트를 위한 재현 명령
@@ -52,9 +50,4 @@ node tools/agent-context-validate.mjs
 node tools/agent-context-index.mjs --check
 node tools/agent-context-index.mjs --init --check
 find agent-context -name "*.json" | xargs -I {} node -e "JSON.parse(require('fs').readFileSync('{}','utf8'))"
-
-# T2Editor 대조
-git -C /workspace/T2Editor-v11 fetch origin
-git -C /workspace/T2Editor-v11 log --oneline origin/main -5
-gh pr view 97 --repo tak2-08/T2Editor-v11 --json state,mergedAt
 ```

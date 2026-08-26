@@ -28,9 +28,9 @@
 | `php-file` | `".agent-context-runtime"` | `runtime.php` (PHP `return [...]` 가드) | `node tools/agent-context-index.mjs --to-php` | Rhymix/WordPress 등 PHP CMS |
 | `sqlite` | `".agent-context-runtime"` | `search.db` (FTS5) | `node tools/agent-context-index.mjs --to-sqlite` | 500+ entries, Grep 500ms → FTS 20ms |
 
-## 원칙 (T2Editor 계승)
+## 원칙
 
-1. **파일이 정본**: `*.md`를 지우고 DB만 남기는 마이그레이션 금지. `decisions/0001`에서 JSON 단독 기각 이유와 동일 — 충돌·diff 가독성.
+1. **파일이 정본**: `*.md`를 지우고 DB만 남기는 마이그레이션 금지 — 충돌·diff 가독성.
 2. **파생은 재생성 가능**: `search.db`는 언제든 `*.md → index.json`으로부터 재생성. `git clean -fdx` 후 1명령 복구.
 3. **1층만으로 완결**: `backend=json`에서도 3단계 프로토콜·토큰 절약이 100% 동작. 2층은 성능 최적화일 뿐.
 
@@ -61,8 +61,7 @@
 - 삭제는 `status: archived` 소프트 삭제, `git rm`은 30일 후
 - `Write` 덮어쓰기 금지, `Read` 후 `Edit` + `updated` 갱신
 
-## T2Editor 대조
+## Universal 설계
 
-- T2Editor: `T2EDITOR_DATA_PATH` vs `DB_PATH` vs `PRIVATE_PATH` 3분리, `T2Editor/config/t2_private_store.php:67` `t2_private_store_write` 패턴
-- Universal: `privateMirror` 1개로 단순화, `php-file` backend 선택 시에만 해당 패턴 차용
-- 원본 `t2_storage.php` 참조는 `tak2-08/T2Editor-v11` `T2Editor/config/t2_storage.php:284`에서 직접 확인 (공개 universal에는 미포함)
+- `privateMirror` 1개로 단순화, `php-file` backend 선택 시 PHP `return [...]` 가드 패턴 사용
+- `storage.backend` 스위치로 프로젝트별 선택

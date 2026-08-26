@@ -5,7 +5,7 @@
 
 - **에이전트 간 공유**: 모든 AI 에이전트가 `git pull` 하나로 동일한 `agent-context/`를 읽고 쓴다 — `agent-to-agent` 컨텍스트 브리지. `npx agent-shared-context init` 한 줄로 어떤 프로젝트든 도입
 - **3단계 점진 공개**: L1 `index.json` (50토큰/entry) → L2 `graph.json`/`features.json` → L3 `*.md` 1~2개
-- **Git이 곧 DB**: PR 리뷰·`git blame`·`git log --follow` 가능, `T2Editor`는 첫 번째 consumer였다가 범용화로 분리
+- **Git이 곧 DB**: PR 리뷰·`git blame`·`git log --follow` 가능, 모든 agent가 `git pull`로 동기화
 - **학습 루프**: `learnings`의 `cause/fix/lesson` 3필드로 실패 반복 방지 — 이전 에이전트의 실패를 다음 에이전트가 즉시 학습
 
 ## 빠른 시작
@@ -85,8 +85,8 @@ tools/
  ├─ agent-context-validate.mjs     # frontmatter lint
  └─ agent-context-init.mjs         # npx 진입점
 templates/frontmatter/             # learning/bug/decision/diary 템플릿
-docs/                              # protocol/schema/storage/migration-from-t2editor/agent-environment
-examples/                          # nextjs-app / python-cli (T2Editor 분석은 원본 repo에만)
+docs/                              # protocol/schema/storage/agent-environment
+examples/                          # nextjs-app / python-cli
 ```
 
 ## 검색 쿼리 (복붙용)
@@ -154,14 +154,12 @@ CI는 `.github/workflows/ci.yml`에서 이 3종만 수행 (경량 gate).
 - **Work environment**: `OpenCode` on `linux (bash)`, workspace `/tmp/agent-context-universal`, is git repo `yes`, platform `linux`
 - **Skills**: `customize-opencode` (for opencode config)
 - **Tools available**: `bash`, `read`, `edit`, `write`, `glob`, `grep`, `task` (explore/general subagents)
-- **T2Editor 정본 확인**: 매 작업 `git fetch origin` `git log --oneline origin/main -5` `git rev-parse HEAD && origin/main` 기준, `T2Editor-v11/AGENTS.md:10` 준수
-- **검증**: `node tools/t2-static-check.mjs` `node tools/t2-css-contract.mjs` `bash tools/t2-release-gate.sh --quick` (env: Node ≥18, php-cli, python3)
+- **정본 확인**: 매 작업 `git fetch origin` `git log --oneline origin/main -5` `git rev-parse HEAD && origin/main` 기준
+- **검증**: `node tools/agent-context-validate.mjs` `node tools/agent-context-index.mjs --check` (env: Node ≥18)
 
 이 DB는 위 모델·환경에서 생성되었으며, 모든 에이전트(Claude/Codex/Opencode)가 동일한 `agent-shared-context` 프로토콜로 읽고 쓸 수 있다.
 
 ## 출처
 
-- 원본: `tak2-08/T2Editor-v11` `T2Editor/agent-context` ( `e42e8fd` PR #97, 16파일 1093라인 ) — 현재는 T2Editor에 분석 결과만 유지, 공개 universal repo에는 예시만 포함 (원본 스냅샷은 `docs/migration-from-t2editor.md`로 대체)
-- 범용화: `docs/migration-from-t2editor.md` 대조표 참조
+- Repository: `https://github.com/tak2-08/agent-shared-context` (에이전트 간 공유 목적의 범용 컨텍스트 DB)
 - 라이선스: MIT
-- Repository: `https://github.com/tak2-08/agent-shared-context` (구 `agent-context`에서 `agent-shared-context`로 개명 — 에이전트 간 공유 목적 명시)
