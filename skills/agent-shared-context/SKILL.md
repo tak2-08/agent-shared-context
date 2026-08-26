@@ -85,6 +85,26 @@ node tools/agent-search-lite.mjs "<query>"
 
 **서브에이전트 불필요**: 모든 도구는 단일 Bash 호출. 메인 에이전트가 직접 검색, Node 없으면 Grep 폴백(`^level: post-it` → `^priority: [45]`). See `docs/session-continuity.md`.
 
+## Commands (슬래시 별칭 → 단일 Bash 호출)
+
+| 별칭 | 명령 | 동작 |
+|---|---|---|
+| `/ac-export` | `node tools/ac.mjs export --session S --task "..." --next "..."` | 세션 내보내기 |
+| `/ac-import` | `node tools/ac.mjs import [file]` | 세션 불러오기 |
+| `/ac-history` | `node tools/ac.mjs history "query"` | 히스토리 검색 (계층, 0 LLM) |
+| `/ac-issue` | `node tools/ac.mjs issue --title "..." [--refs "p1,p2"]` | 이슈 작성 |
+| `/ac-learning` | `node tools/ac.mjs learning --title "..." --cause C --fix F --lesson L` | 교훈 기록 |
+| `/ac-idea` / `/ac-note` / `/ac-todo` / `/ac-decision` | `node tools/ac.mjs <type> --title "..."` | 기타 기록 |
+
+## 결과 중심 기록 (원칙)
+
+도구 호출 로그를 남기지 않는다 — **결론 + `refs`(검증 링크)**만 저장:
+
+```
+❌ "Grep으로 검색하고 Read로 3개 읽었더니..."
+✅ "JWT race → 전역 mutex 해결. 검증: src/auth/refresh.ts:42"
+```
+
 ## References
 
 - Concepts from `Coral-Protocol/AgentRadio` (Apache 2.0) and contemporary session collaboration patterns — file-based adaptation. See `docs/radio.md` `docs/sessions.md` `docs/hierarchy.md` `REFERENCES.md`.

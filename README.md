@@ -230,6 +230,17 @@ cp -r skills/agent-shared-context ~/.codex/skills/
 - **`skills/agent-shared-context/SKILL.md`** — OpenCode/Codex generic skill (same, standard frontmatter)
 - **네이티브 유니버설**: 주력 `Claude Code` `Codex` `OpenCode` 모두 `Node` 네이티브 지원, 추가 언어·의존성 0. 상세는 `docs/skill.md` (또는 skill 파일 자체).
 
+## 명령어 — 스킬 커맨드 1줄 호출
+
+| 별칭 | 명령 |
+|---|---|
+| /ac-export | `node tools/ac.mjs export --session S --task "..." --next "..."` — 세션 내보내기 |
+| /ac-import | `node tools/ac.mjs import` — 세션 불러오기 (~280 tok) |
+| /ac-history | `node tools/ac.mjs history "query"` — 계층 검색 (0 LLM) |
+| /ac-issue / /ac-learning / /ac-idea ... | `node tools/ac.mjs <type> --title "..." [--refs "p1,p2"]` |
+
+**결과 중심 기록 원칙**: 도구 호출 로그 저장 금지 — 결론 + refs(검증 링크)만. 토큰 낭비 제거.
+
 ## 검증
 
 ```bash
