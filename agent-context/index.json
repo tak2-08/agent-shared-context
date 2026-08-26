@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-08-26T09:51:47.664Z",
+  "generated_at": "2026-08-26T11:25:17.401Z",
   "generated_by": "agent-context-index.mjs",
   "_path": "agent-context/index.json",
   "description": "L1 압축 카탈로그 — 저용량 에이전트가 가장 먼저 읽는 파일. preview 60자 + summary 120자로 본문 Read 없이 관련성 판단.",
@@ -8,12 +8,13 @@
     "soft_limit_chars": 200000,
     "max_entries": 1000,
     "should_compress": false,
-    "total_chars": 1117,
-    "total_entries": 1
+    "total_chars": 1509,
+    "total_entries": 2
   },
   "counts": {
     "handoff": 1,
-    "total": 1
+    "issue": 1,
+    "total": 2
   },
   "entries": [
     {
@@ -38,6 +39,28 @@
       "related": [],
       "affects": [],
       "chars": 1117
+    },
+    {
+      "id": "issue-20260826-b48a3b55",
+      "type": "issue",
+      "level": "diary",
+      "title": "login 500 on refresh",
+      "tags": [
+        "issue"
+      ],
+      "feature": "auth",
+      "scope": "global",
+      "agent": "system",
+      "created": "2026-08-26T11:23:08.632Z",
+      "updated": "2026-08-26T11:23:08.632Z",
+      "status": "done",
+      "priority": 4,
+      "summary": "login 500 on refresh",
+      "preview": "login 500 on refresh",
+      "path": "bugs/2026-08-26-login-500-on-refresh--system.md",
+      "related": [],
+      "affects": [],
+      "chars": 392
     }
   ]
 }

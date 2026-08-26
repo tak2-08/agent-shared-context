@@ -3,7 +3,8 @@
 // Objective benchmark — close to public standard, critical, reproducible
 // Measures token saving of hierarchical lightweight AI search vs full read, with synthetic scale 5/50/500
 // Standard: tokens = chars/4 (Anthropic counting), hit = query tokens found in title/tags/summary, latency = ms for search vs full read
-// Run: node tools/benchmark.mjs [--scale 5,50,500] [--queries 20] [--json]
+// Run: node tools/benchmark.mjs [--scale 5,50,500] [--queries 20] [--seed 42] [--json]
+// --queries N: 20개 고정 질의 목록을 N회 사이클링 (N>20이면 반복)
 // Note: No LLM calls, 0 tokens for lightweight AI itself, like cache hierarchy
 
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
@@ -66,22 +67,52 @@ function syntheticEntries(n) {
   return entries;
 }
 
+const SYNONYMS = CONFIG.search?.synonyms || {};
+function expandTokens(tokens) {
+  const set = new Set(tokens);
+  for (const t of tokens) { const s = SYNONYMS[t]; if (Array.isArray(s)) s.forEach(x=>set.add(x)); }
+  for (const [k, list] of Object.entries(SYNONYMS)) if (tokens.some(t => list.includes(t))) set.add(k);
+  return [...set];
+}
+function rankOf(level){ const m=Object.fromEntries(LEVELS.map((k,i)=>[k,i])); return m[level] ?? 0; }
+
 function searchLite(entries, query, opts={}) {
-  const limit = opts.limit||3;
-  const qTokens = query.toLowerCase().split(/\s+/).filter(Boolean);
-  // Lightweight AI assign level: 1 word → post-it, 2-3 → memo, 4-8 → diary, else bookshelf (like hierarchy doc)
+  // nemotron 리뷰 반영: 동의어 확장(0 LLM) + cache-miss 시 큰 레벨로 최대 2회 확장
+  const rawTokens = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const qTokens = expandTokens(rawTokens);
   let assignedLevel = opts.level;
   if (!assignedLevel) {
-    const words = qTokens.length;
+    const words = rawTokens.length;
     const q = query.toLowerCase();
-    if (q.includes('overall') || q.includes('architecture')) assignedLevel='bookshelf';
+    if (q.includes('overall') || q.includes('architecture') || q.includes('flow')) assignedLevel='bookshelf';
     else if (words<=1) assignedLevel='post-it';
     else if (words<=3) assignedLevel='memo';
     else if (words<=8) assignedLevel='diary';
     else assignedLevel='bookshelf';
   }
+  let res = collect(entries, qTokens, opts, rankOf(assignedLevel));
+  res.assignedLevel = assignedLevel;
+  if (!res.hit && !opts.level) {
+    let r = LEVELS.indexOf(assignedLevel);
+    for (let step=0; step<2 && r+1<LEVELS.length; step++) {
+      r++;
+      const retry = collect(entries, qTokens, { ...opts }, rankOf(LEVELS[r]));
+      if (retry.hit) {
+        res.top = retry.top; res.topTokens = retry.topTokens;
+        res.hit = true; res.expandedTo = LEVELS[r];
+        break;
+      }
+    }
+  }
+  const sv = res.fullTokens ? (res.fullTokens-res.topTokens)/res.fullTokens*100 : 0;
+  res.saving = sv;
+  return res;
+}
+
+function collect(entries, qTokens, opts={}, startRankOverride) {
+  const limit = opts.limit||3;
   const levelRank = Object.fromEntries(LEVELS.map((k,i)=>[k,i]));
-  const startRank = levelRank[assignedLevel] ?? 0;
+  const startRank = startRankOverride !== undefined ? startRankOverride : (levelRank['post-it'] ?? 0);
   // Score like agent-search-lite: hit + priority + recency - levelDistance
   const scored = entries.map(e=>{
     const levRank = levelRank[e.level] ?? 2;
@@ -100,7 +131,7 @@ function searchLite(entries, query, opts={}) {
   const topTokens = top.reduce((s,x)=>s+x.estTokens,0);
   const fullTokens = entries.reduce((s,e)=>s+(TOKENS[e.level]||200),0);
   const hit = top.length>0;
-  return { assignedLevel, top, topTokens, fullTokens, saving: fullTokens? (fullTokens-topTokens)/fullTokens*100:0, hit, evaluated: scored.length };
+  return { top, topTokens, fullTokens, hit, evaluated: scored.length };
 }
 
 function benchmark(scales=[5,50,500], queriesPerScale=20) {
@@ -127,7 +158,7 @@ function benchmark(scales=[5,50,500], queriesPerScale=20) {
       // Issue #3 fix: average saving over HITS only — a miss is not "infinite saving"
       if (res.hit) { totalSaving += res.saving; hits++; }
       // Issue #3 fix: miss with 0 tokens is NOT "100% saving" — it's a failed search.
-      const savingStr = res.hit ? res.saving.toFixed(1)+'%' : 'n/a (miss)';
+      const savingStr = !res.hit ? 'n/a (miss)' : (res.saving >= 99.95 ? '99.9%+' : res.saving.toFixed(1)+'%');
       perQuery.push({ query: q, assignedLevel: res.assignedLevel, topTokens: res.topTokens, saving: savingStr, hit: res.hit, latency: latency.toFixed(2)+'ms' });
     }
     results.push({
@@ -137,7 +168,7 @@ function benchmark(scales=[5,50,500], queriesPerScale=20) {
       fullTokens,
       avgTopTokens: Math.round(totalTopTokens/queriesPerScale),
       // saving averaged over hits only; misses reported separately via hitRate
-      avgSaving: hits ? (totalSaving/hits).toFixed(1)+'%' : 'n/a',
+      avgSaving: hits ? ((totalSaving/hits) >= 99.95 ? '99.9%+' : (totalSaving/hits).toFixed(1)+'%') : 'n/a',
       hitRate: (hits/queriesPerScale*100).toFixed(1)+'%',
       avgLatency: (totalLatencyMs/queriesPerScale).toFixed(2)+'ms',
       fullLatencyEst: (entries.length*0.05).toFixed(2)+'ms (est. Read all md)',

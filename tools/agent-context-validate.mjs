@@ -85,7 +85,11 @@ for (const f of files) {
   if (fm.id && !new RegExp(schema.properties?.id?.pattern || "^[a-z-]+-[0-9]{8}-[a-z0-9]{8}$").test(fm.id)) {
     console.error(`FAIL ${f}: id pattern mismatch '${fm.id}'`); errors++;
   }
-  if (fm.type && schema.properties?.type?.enum && !schema.properties.type.enum.includes(fm.type)) {
+  // typesFluid=true (기본)면 유동 타입 허용 — 구버전 scaffold의 stale enum도 통과시킴
+  const typeEnum = schema.properties?.type?.enum;
+  if (fm.type && CONFIG.typesFluid === true) {
+    if (!/^[a-z0-9-]+$/.test(fm.type)) { console.error(`FAIL ${f}: fluid type pattern mismatch '${fm.type}'`); errors++; }
+  } else if (fm.type && typeEnum && !typeEnum.includes(fm.type)) {
     console.error(`FAIL ${f}: type '${fm.type}' not in enum`); errors++;
   }
   if (fm.feature && schema.properties?.feature?.enum && !schema.properties.feature.enum.includes(fm.feature)) {
