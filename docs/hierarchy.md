@@ -23,7 +23,7 @@
 
 ## 유동적·능동적 배정
 
-- **고정 아님**: `type`은 `issue|work-history|idea|overall-flow` 등 **자유 문자열** (`schema.json: type pattern ^[a-z0-9-]+$`), `feature`도 자유. 제안된 9개는 예시일 뿐 강제 아님 (`typesFluid: true`).
+- **고정 아님**: `type`은 `issue|work-history|idea|overall-flow` 등 **자유 문자열** (`schema.json: type pattern ^[a-z0-9-]+$`), `feature`도 자유. 제안된 9개는 예시일 뿐 강제 아님 (`typesFluid: true` — v0.4.1부터 index --init·validator가 실제로 이 값을 읽어 schema type을 pattern 기반으로 생성/통과시킨다).
 - **능동 배정**: `level`은 에이전트가 직접 정하거나, 비우면 **가벼운 AI가 자동 배정** (`hierarchy.autoAssign: true`, `search.lightweightAI: auto`)
   - 길이 30자 이하 + priority 5 → `post-it`
   - 200자 이하 → `memo`
