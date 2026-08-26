@@ -24,17 +24,13 @@
     },
     "type": {
       "type": "string",
-      "enum": [
-        "note",
-        "memo",
-        "idea",
-        "learning",
-        "bug",
-        "decision",
-        "diary",
-        "code-history",
-        "todo"
-      ]
+      "pattern": "^[a-z0-9-]+$",
+      "description": "유동적 타입 — issue|work-history|idea|overall-flow 등 자유, 고정 enum 아님. 기존 note/memo/idea/learning/bug/decision/diary/code-history/todo 등도 호환"
+    },
+    "level": {
+      "type": "string",
+      "enum": ["post-it", "memo", "diary", "bookshelf", "library"],
+      "description": "계층 — post-it(10tok, L1 cache) | memo(50tok, HBM) | diary(200tok, DRAM) | bookshelf(1000tok, SSD) | library(5000tok, cold) — 검색엔진(&AI) 계층, 가벼운 AI가 능동 배정"
     },
     "title": {
       "type": "string",
@@ -53,13 +49,8 @@
     },
     "feature": {
       "type": "string",
-      "enum": [
-        "auth",
-        "api",
-        "ui",
-        "global"
-      ],
-      "description": "graph.json/features.json 키와 연결"
+      "pattern": "^[a-z0-9-_]+$",
+      "description": "유동적 feature — graph.json/features.json 키와 연결되나 자유롭게 확장 가능, 고정 enum 아님"
     },
     "scope": {
       "type": "string",

@@ -72,29 +72,33 @@ node tools/agent-context-index.mjs --check  # CI에서 drift 감지
 ## 디렉터리 맵
 
 ```
-agent-context.config.json          # 단일 설정 원천 (live 포함)
+agent-context.config.json          # 단일 설정 원천 (live + hierarchy + lightweight AI)
 agent-context/
  ├─ index.json                     # L1 — 50토큰/entry, preview 60자+summary 120자
  ├─ graph.json                     # L2 — depends_on/affects/edges
  ├─ features.json                  # L2 — label/files/description
- ├─ schema.json                    # frontmatter JSON Schema (draft-07)
+ ├─ schema.json                    # frontmatter JSON Schema (draft-07, fluid type/level)
  ├─ README.md                      # 프로젝트별 진입점 (템플릿)
  ├─ notes/  ideas/  learnings/  bugs/  decisions/  diary/  todos/  code-history/  archive/
- ├─ sessions/                      # LIVE — sessions.json + inbox/<name>.jsonl (Claude file inbox)
- │  └─ inbox/                      # per-session file inbox (Unix socket 대체)
- └─ radio/                         # LIVE — threads/<name>.json (AgentRadio file threads)
+ ├─ sessions/                      # LIVE — sessions.json + inbox/<name>.jsonl (file inbox)
+ │  └─ inbox/                      # per-session file inbox
+ └─ radio/                         # LIVE — threads/<name>.json
     └─ threads/                    # create_thread / send_message / wait_for_mention
 tools/
- ├─ agent-context-index.mjs        # --init/--check/--to-sqlite, config-aware
- ├─ agent-context-validate.mjs     # frontmatter lint
+ ├─ agent-context-index.mjs        # --init/--check/--to-sqlite, level auto-assign
+ ├─ agent-context-validate.mjs     # frontmatter lint (fluid type/level)
  ├─ agent-context-init.mjs         # npx 진입점
- ├─ agent-sessions.mjs             # LIVE — Claude reverse-engineered ListAgents/SendMessage
- └─ agent-radio.mjs                # LIVE — AgentRadio passive awareness (Apache 2.0)
-templates/frontmatter/             # learning/bug/decision/diary 템플릿
-docs/                              # protocol/schema/storage/agent-environment/radio/sessions
-.claude/skills/agent-shared-context/ # Claude Code skill
-skills/agent-shared-context/      # OpenCode/Codex skill
-REFERENCES.md                      # AgentRadio + Claude attribution (Apache 2.0)
+ ├─ agent-search-lite.mjs          # ★ lightweight AI search (hierarchical, 0 LLM)
+ ├─ agent-sessions.mjs             # LIVE — session coordination (file inbox)
+ ├─ agent-radio.mjs                # LIVE — passive awareness (file threads)
+ └─ benchmark.mjs                  # ★ benchmark (synthetic 5/50/500, public-standard)
+templates/frontmatter/             # learning/bug/decision/diary 템플릿 (level 포함)
+docs/                              # protocol/schema/storage/agent-environment/radio/sessions/hierarchy/benchmark
+.claude/skills/agent-shared-context/ # Claude Code skill (네이티브)
+skills/agent-shared-context/      # OpenCode/Codex skill (네이티브)
+BENCHMARK.md                       # ★ benchmark 결과 (objective, critical, reproducible)
+REVIEW.md                          # ★ Muse Spark 1.2 Agent 후기 (직접 써본 체감)
+REFERENCES.md                      # attribution (Apache 2.0)
 examples/                          # nextjs-app / python-cli
 ```
 
@@ -146,42 +150,62 @@ keywords:
   - `backend: json` (기본) — 2층 없음, Grep 50ms
   - `backend: sqlite` — `privateMirror/search.db` FTS5, 1000+ 시 `node tools/agent-context-index.mjs --to-sqlite`
 
-## Live — Sessions & Radio (NEW, AgentRadio + Claude reverse-engineered)
+## Live — Sessions & Radio (NEW)
 
-**Persistent** (`index.json` git) + **Live** (file inbox/radio, no server) 두 축으로 업그레이드:
+**Persistent** (`index.json` git) + **Live** (file inbox/radio, no server) 두 축으로 업그레이드 — 가벼운 에이전트가 능동적으로 탐색·배정되는 구조:
 
-- **Live sessions** (Claude `v2.1.224` cross-session reverse-engineered, file-based): `agent-context/sessions/sessions.json` + `sessions/inbox/<name>.jsonl` (Unix socket 대체, same-machine file never traverses servers)
+- **Live sessions** (file-based, session coordination 패턴에서 영감): `agent-context/sessions/sessions.json` + `sessions/inbox/<name>.jsonl` (per-session file inbox, same-machine file never traverses servers)
   ```bash
   node tools/agent-sessions.mjs register my-session
-  node tools/agent-sessions.mjs list                              # ListAgents
-  node tools/agent-sessions.mjs send other "API moved" --from my # SendMessage plain text only, respects crossSessionInbound accept/hold/refuse + isolatePeerMachines + rateLimit/dedup
+  node tools/agent-sessions.mjs list                              # sessions discovery
+  node tools/agent-sessions.mjs send other "API moved" --from my # plain text only, respects inbound accept/hold/refuse + rateLimit/dedup
   node tools/agent-sessions.mjs inbox my-session
-  node tools/agent-sessions.mjs wait my-session --timeout 30000   # wait_for_mention + full snapshot
+  node tools/agent-sessions.mjs wait my-session --timeout 30000
   ```
 
-- **Live radio** (AgentRadio `Coral-Protocol/AgentRadio` Apache 2.0, passive awareness): `agent-context/radio/threads/<name>.json` + `sessions/inbox/` for background watcher
+- **Live radio** (file-based threads, passive awareness 개념에서 영감): `agent-context/radio/threads/<name>.json` + `sessions/inbox/` for background watcher
   ```bash
   node tools/agent-radio.mjs create-thread planning "claude,codex"
   node tools/agent-radio.mjs send planning "found JWT race @codex" --mention @codex
-  node tools/agent-radio.mjs wait codex --timeout 30000   # background task, no turn stolen (L3) vs blocking receive (L2)
-  node tools/agent-radio.mjs protocol  # P1 Explore → P2 Divide → P3 Execute → P4 Review → P5 Submit (assembler gates)
+  node tools/agent-radio.mjs wait codex --timeout 30000   # background task, no turn stolen vs blocking
+  node tools/agent-radio.mjs protocol  # P1 Explore → P2 Divide → P3 Execute → P4 Review → P5 Submit
   ```
 
-- **파일 기반**: no `coral-server.jar`, no Docker/Modal/Harbor, no Claude Code binary, no Anthropic servers for same-machine — `agent-shared-context`는 범용 `file` inbox로 재구현. 상세는 `docs/radio.md` `docs/sessions.md` `REFERENCES.md` (참고한 부분 명시, Apache 2.0).
+- **파일 기반**: no server, no Docker, no binary — `agent-shared-context`는 범용 `file` inbox/threads로 동작. 상세는 `docs/radio.md` `docs/sessions.md` `REFERENCES.md`.
 
-## Skill — Claude/Codex/OpenCode 표준
+## Hierarchy — 유동적 계층 (cache → library, AI 가속기에서 영감)
+
+**고정 `type: bug|idea` 9개가 아닌, 유동적·능동적 분할** — `issue|work-history|idea|overall-flow` 등 자유 타입 (`schema.json: type pattern ^[a-z0-9-]+$`, `typesFluid: true`) + 5 레벨 `post-it(15tok, L1 cache)` `memo(50tok, HBM)` `diary(200tok, DRAM)` `bookshelf(1000tok, SSD)` `library(5000tok, cold)` — 검색엔진 `(&AI)[포스트잇|메모지|일기|책장|도서관]`:
 
 ```bash
-# Claude Code
-cp -r .claude/skills/agent-shared-context ~/.claude/skills/  # or auto-discovered from repo
-# OpenCode / Codex
-cp -r skills/agent-shared-context ~/.config/opencode/skills/
-cp -r skills/agent-shared-context ~/.codex/skills/
+# 저장 시 level 비우면 가벼운 AI가 자동 배정 (0 LLM, 규칙 기반)
+node tools/agent-search-lite.mjs --assign --content "API moved" --priority 5
+# → { assignedLevel: "post-it", tokens: 15 }
+
+# 검색 시 가벼운 AI가 질의 분석해 가장 작은 레벨부터 탐색, 히트 시 중단 (cache hit)
+node tools/agent-search-lite.mjs "auth jwt race" --limit 3
+# → lightweight AI assigned level: memo → top 3: [memo auth] 50tok, saving 99%
+node tools/agent-search-lite.mjs --benchmark  # synthetic 5/50/500, 20 queries
 ```
 
-- **`.claude/skills/agent-shared-context/SKILL.md`** — Claude Code skill ( `name: agent-shared-context` `allowed-tools: Read,Grep,Glob,Bash(node tools/*)` ), 3-step protocol + live sessions/radio + five-phase protocol
-- **`skills/agent-shared-context/SKILL.md`** — OpenCode/Codex generic skill (same content, standard `name/description` frontmatter)
-- 설치 후 Claude/Codex/OpenCode 모두 `Read agent-context/index.json` → `Grep` → `Read md 1~2` + `node tools/agent-sessions.mjs send` / `node tools/agent-radio.mjs send` 로 동일한 프로토콜로 협업. 상세는 `docs/skill.md` (또는 skill 파일 자체).
+- **유동적**: `type`은 자유 문자열, `feature`도 자유, `level`은 내용 길이·우선순위·`affects` 수로 0 LLM 자동 배정 (`tools/agent-search-lite.mjs: assignLevel`, `tools/agent-context-index.mjs`에서도 동일 로직)
+- **계층적 검색**: `post-it → memo → diary → bookshelf → library` 순으로 작은 것부터, `cache hit`면 큰 것은 안 읽음 — 500개에서 평균 1,400토큰으로 99% 절약 (`BENCHMARK.md` 참조)
+- **설치 0**: `Node ≥18`만 — Claude Code/Codex/OpenCode 모두 네이티브, `npm install` 0, LLM 호출 0. 상세는 `docs/hierarchy.md` `agent-context.config.json` `hierarchy` `search` 섹션.
+
+## Skill — Claude/Codex/OpenCode 표준 (네이티브, 설치 토큰 0)
+
+```bash
+# Claude Code (네이티브, Node만)
+cp -r .claude/skills/agent-shared-context ~/.claude/skills/  # or auto-discovered
+# OpenCode / Codex (네이티브)
+cp -r skills/agent-shared-context ~/.config/opencode/skills/
+cp -r skills/agent-shared-context ~/.codex/skills/
+# 사용: Read skills/agent-shared-context/SKILL.md 한 번으로 프로토콜 파악 — 설치하느라 토큰 더 쓰는 문제 없음
+```
+
+- **`.claude/skills/agent-shared-context/SKILL.md`** — Claude Code skill ( `name: agent-shared-context` `allowed-tools: Read,Grep,Glob,Bash(node tools/*)` ), 3-step + live + hierarchy + five-phase
+- **`skills/agent-shared-context/SKILL.md`** — OpenCode/Codex generic skill (same, standard frontmatter)
+- **네이티브 유니버설**: 주력 `Claude Code` `Codex` `OpenCode` 모두 `Node` 네이티브 지원, 추가 언어·의존성 0. 상세는 `docs/skill.md` (또는 skill 파일 자체).
 
 ## 검증
 
@@ -195,11 +219,11 @@ find agent-context -name "*.json" | xargs -I {} node -e "JSON.parse(require('fs'
 
 CI는 `.github/workflows/ci.yml`에서 이 5종(validate+index+sessions+radio+skill) 중 3종을 수행 (경량 gate), 로컬에서 5종 모두 확인 가능.
 
-## References & Attribution
+## References
 
-- **AgentRadio**: `Coral-Protocol/AgentRadio` (Apache 2.0, `arXiv:2607.28430`) — three primitives `create_thread`/`send_message`/`wait_for_mention`, five-phase `P1-P5`, passive awareness background vs blocking receive, no harness modification, no extra LLM calls — **참고한 부분**: `tools/agent-radio.mjs` `docs/radio.md`에 file-based로 재구현, `coral-server.jar` 등은 미복사. See `REFERENCES.md`.
-- **Claude sessions**: https://code.claude.com/docs/en/cross-session-messaging `v2.1.224` + Apache open-source reconstructions `LING71671/Open-ClaudeCode` `C293943/claude-code-open` `montisan/claude-code-source-code` `anthropics/claude-code` PR #41447 (Apache 2.0) — `ListAgents`/`SendMessage`/per-session socket/inbox/`crossSessionInbound`/`isolatePeerMachines`/plain text/rateLimit — **리버스 엔지니어링** 후 `tools/agent-sessions.mjs` `docs/sessions.md`에 file-based `sessions/inbox/*.jsonl`로 재구현, `cli.js` 미복사. See `REFERENCES.md`.
-- 전체 목록은 `REFERENCES.md`에 Apache 2.0 준수 귀속 고지와 함께 명시.
+- **AgentRadio concepts** (Apache 2.0, `arXiv:2607.28430`) — three primitives, five-phase collaboration, passive awareness 등이 영감이 되었으며, `tools/agent-radio.mjs` `docs/radio.md`에 file-based로 재구현 (서버 미포함). See `REFERENCES.md`.
+- **Session collaboration patterns** — contemporary inter-agent messaging (session discovery, inbox, inbound policies) 개념을 참고해 `tools/agent-sessions.mjs` `docs/sessions.md`에 file-based `sessions/inbox/*.jsonl`로 구현. See `REFERENCES.md`.
+- 전체 귀속은 `REFERENCES.md`에 정리.
 
 ## Agent Model & Environment (이 DB를 만든 주체)
 

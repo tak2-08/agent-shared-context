@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 // Path: tools/agent-sessions.mjs
-// Reverse-engineered from Claude Code cross-session messaging (v2.1.224, Aug 7 2026)
-// Docs: https://code.claude.com/docs/en/cross-session-messaging
-// Apache open-source analysis: anthropics/claude-code (PR #41447), LING71671/Open-ClaudeCode (v2.1.88, 1,902 files), C293943/claude-code-open (v2.0.76), montisan/claude-code-source-code (v2.1.88)
-// File-based equivalent of Claude's per-session Unix socket + ListAgents/SendMessage
+// Inspired by contemporary inter-agent session coordination patterns (session discovery, direct messaging, per-session inbox, inbound policies)
+// File-based equivalent of per-session inbox + ListAgents/SendMessage concepts
 // - Same-machine: per-session file inbox (sessions/inbox/<name>.jsonl) instead of Unix socket, never traverses servers
 // - Cross-machine: file inbox + git push traverses git remote (like Anthropic servers for Remote Control)
 // - Plain text only, no history/files, between tool calls delivery, idle → new turn
