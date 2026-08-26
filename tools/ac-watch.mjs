@@ -16,7 +16,7 @@
 //   node tools/ac-watch.mjs promote <candidate-file>   # .candidates → 정식 위치
 
 import { execFileSync } from 'node:child_process';
-import { writeFileSync, readFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync, mkdirSync, readdirSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
 
 const CONFIG = (() => {
@@ -104,11 +104,15 @@ if (a[0] === 'promote') {
   const dirMap = { learning:'learnings', decision:'decisions', 'work-history':'code-history', bug:'bugs' };
   const destDir = join(ROOT, dirMap[m?.[1]] || 'notes');
   mkdirSync(destDir,{recursive:true});
-  const destName = f.replace(/^[\w]+-/, ''); // strip hash prefix
+  // Issue(자체 테스트) fix: 해시-prefix 제거만 하면 'learning.md'처럼 타입명만 남는 버그.
+  // frontmatter title에서 slug를 만들고 오늘 날짜를 붙인다.
+  let title = 'candidate';
+  try { const t = readFileSync(src,'utf8').match(/title: "([^"]+)"/); if (t) title = t[1]; } catch {}
+  const slug = String(title).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40) || 'entry';
+  const destName = `${new Date().toISOString().slice(0,10)}-${slug}--promoted.md`;
   // move via git mv if tracked, else fs rename
   try { execFileSync('git',['mv',src,join(destDir,destName)],{cwd:process.cwd()}); }
   catch {
-    const { renameSync } = await import('node:fs');
     renameSync(src, join(destDir,destName));
   }
   console.log(`promoted → ${join(destDir,destName)} (결론을 채운 뒤 node tools/ac.mjs index)`);

@@ -60,3 +60,22 @@ node tools/agent-radio.mjs send planning "found @codex" --mention @codex
 
 ---
 *Teams can give feedback at https://github.com/anomalyco/opencode mentioning Meta Muse Spark. Model: `muse-spark-1.2-contributor-free` (opencode/muse-spark-1.2-contributor-free), Today 2026-08-26, Platform linux, Tools bash/read/edit/write/glob/grep/task*
+
+---
+
+## v0.5 후기 — 6점 비전을 스스로 구현해보며
+
+외부 리뷰(아키텍처 8.1, 검색 6.5)와 두 AI 테스터의 스트레스 리포트를 받고, 여섯 방향을 전부 "지금" 하지는 않았다. 판정 기준은 하나였다 — **zero-install·0-LLM 철학을 깨는가?**
+
+| 방향 | 판정 | 이유 |
+|---|---|---|
+| 의미 검색 | 부분 | 동의어 확장+BM25-lite로 recall을 먼저 올리고, 임베딩은 opt-in 어댑터로. 미설치면 실행조차 안 함 — `router.semantic: unavailable`이 그 증거 |
+| 자동 관찰 | 채택 | 단, **후보만** 자동 생성(proposed/observed). 결론 없는 자동 기억은 오염이므로 promote 게이트를 뒀다. 실측: 7일 커밋에서 12건 후보 |
+| 지식 그래프 | 기반 | related[]→인과 엣지 1-hop 유추까지. supersedes 체인은 P1 |
+| 작업 성공률 | 프록시 | retrieval 정확도 하네스까지만. 실작업 성공률은 라이브 에이전트 필요 — 대리지표임을 BENCHMARK에 명시 |
+| 실사용 규모 | 도구만 | stale{} 리포트로 모순 정리 후보를 뽑는 것까지. 답은 시간 |
+| SQLite | 채택 | Node ≥22.5 내장 node:sqlite — **npm install 0** 으로 FTS5. 미지원은 폴백 안내 |
+
+**가장 값진 배움**: e2e-workflow 테스트가 search-lite의 `hit` 필드 누락 버그를 잡아냈다. 개별 도구 테스트만으로는 조합 결함이 절대 안 보였다. "기능 추가 < 조합 검증"을 CI에 박아둔 것이 이번 최대 수확.
+
+**다음 에이전트에게**: `node tools/ac-watch.mjs --since "1 day ago"` 로 시작해 후보를 승격·보강하는 것이 가장 저비용인 기여 경로다.
