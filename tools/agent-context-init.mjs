@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 // Path: tools/agent-context-init.mjs
 // npx entry: interactive scaffold when agent-context/ does not exist
-import { existsSync, mkdirSync, writeFileSync, readFileSync, cpSync } from 'node:fs';
-import { join } from 'node:path';
+// Issue #3 fix: scaffold into process.cwd() (or --target), NEVER the script's
+// install location. This makes `npx agent-shared-context init` write into the
+// user's actual project instead of the npx cache / source clone.
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 
 const args = process.argv.slice(2);
@@ -11,8 +14,12 @@ function getArg(name) {
   return i !== -1 ? args[i+1] : null;
 }
 const yes = args.includes('--yes') || args.includes('-y');
+const force = args.includes('--force');
 const projectName = getArg('--project') || getArg('--name');
 const featuresArg = getArg('--features');
+// Issue #3 fix: default target is process.cwd(), overridable via --target
+const ROOT = resolve(getArg('--target') || process.cwd());
+const contextRoot = 'agent-context';
 
 async function prompt(q, def) {
   if (yes) return def;
@@ -20,14 +27,21 @@ async function prompt(q, def) {
   return await new Promise(res => rl.question(`${q} [${def}]: `, ans => { rl.close(); res(ans.trim() || def); }));
 }
 
-const ROOT = new URL('..', import.meta.url).pathname;
-const contextRoot = 'agent-context';
+console.log(`target: ${ROOT}`);
 
-if (existsSync(join(ROOT, contextRoot)) && !args.includes('--force')) {
-  // if already exists, just run --init
+if (existsSync(join(ROOT, contextRoot)) && !force) {
+  // if already exists, just run --init against it
+  console.log(`${contextRoot}/ already exists here — running --init (use --force to rescaffold)`);
   const { spawnSync } = await import('node:child_process');
-  const r = spawnSync(process.execPath, [join(ROOT, 'tools/agent-context-index.mjs'), '--init', ... (getArg('--config') ? ['--config', getArg('--config')] : [])], { stdio: 'inherit' });
+  const self = fileURLToSelf();
+  const r = spawnSync(process.execPath, [self, '--init', ...(getArg('--config') ? ['--config', getArg('--config')] : [])], { stdio: 'inherit', cwd: ROOT });
   process.exit(r.status ?? 0);
+}
+
+function fileURLToSelf() {
+  // resolve this script's own path for spawning sibling tools; sibling index.mjs
+  // is cwd-first so spawning by absolute path is safe.
+  return new URL(import.meta.url).pathname;
 }
 
 // scaffold
@@ -69,9 +83,10 @@ for (const d of ["notes","learnings","bugs","decisions","ideas","diary","todos",
   if (!existsSync(keep)) writeFileSync(keep,'','utf8');
 }
 
-console.log(`scaffolded ${contextRoot}/ with ${featuresList.length} features`);
+console.log(`scaffolded ${join(ROOT, contextRoot)}/ with ${featuresList.length} features`);
 
-// run --init to generate features/graph/schema
+// run --init to generate features/graph/schema — sibling tool, but cwd-first
+// resolution means it writes into ROOT (the user's project).
 const { spawnSync } = await import('node:child_process');
-const r = spawnSync(process.execPath, [join(ROOT, 'tools/agent-context-index.mjs'), '--init'], { stdio: 'inherit' });
+const r = spawnSync(process.execPath, [fileURLToSelf().replace('agent-context-init.mjs','agent-context-index.mjs'), '--init'], { stdio: 'inherit', cwd: ROOT });
 process.exit(r.status ?? 0);

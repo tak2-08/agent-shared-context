@@ -24,6 +24,18 @@ const LEVELS = ['post-it','memo','diary','bookshelf','library'];
 const TOKENS = { 'post-it': 15, memo: 50, diary: 200, bookshelf: 1000, library: 5000 };
 const CHARS_PER_TOKEN = 4;
 
+// Issue #3 fix: seeded RNG (mulberry32) for reproducible runs
+let SEED = 42;
+function mulberry32(a) {
+  return function() {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+let rand = mulberry32(SEED);
+
 function estimateTokens(chars) { return Math.ceil(chars / CHARS_PER_TOKEN); }
 
 function syntheticEntries(n) {
@@ -39,17 +51,17 @@ function syntheticEntries(n) {
   const types = ['issue','work-history','idea','overall-flow','note','bug','learning','decision','diary','todo'];
   const entries = [];
   for (let i=0;i<n;i++) {
-    const r = Math.random();
+    const r = rand();
     let acc=0, chosen=dist[0];
     for (const d of dist) { acc+=d.p; if (r<acc) { chosen=d; break; } }
     const level = chosen.lev;
-    const priority = Math.ceil(Math.random()*5);
+    const priority = Math.ceil(rand()*5);
     const feature = features[i % features.length];
     const type = types[i % types.length];
-    const chars = chosen.chars + Math.floor((Math.random()-0.5)*chosen.chars*0.3);
+    const chars = chosen.chars + Math.floor((rand()-0.5)*chosen.chars*0.3);
     const title = `${type} ${feature} ${level} ${i}`;
     const summary = `synthetic ${level} ${feature} ${type} priority ${priority}`.repeat(Math.ceil(chars/40)).slice(0, chars);
-    entries.push({ id: `${type}-${String(i).padStart(4,'0')}`, type, level, title, tags: [feature, level], feature, priority, chars, summary, updated: new Date(Date.now()-Math.random()*30*86400000).toISOString() });
+    entries.push({ id: `${type}-${String(i).padStart(4,'0')}`, type, level, title, tags: [feature, level], feature, priority, chars, summary, updated: new Date(Date.now()-rand()*30*86400000).toISOString() });
   }
   return entries;
 }
@@ -112,16 +124,20 @@ function benchmark(scales=[5,50,500], queriesPerScale=20) {
       const latency = performance.now() - start;
       totalLatencyMs += latency;
       totalTopTokens += res.topTokens;
-      totalSaving += res.saving;
-      if (res.hit) hits++;
-      perQuery.push({ query: q, assignedLevel: res.assignedLevel, topTokens: res.topTokens, saving: res.saving.toFixed(1)+'%', hit: res.hit, latency: latency.toFixed(2)+'ms' });
+      // Issue #3 fix: average saving over HITS only — a miss is not "infinite saving"
+      if (res.hit) { totalSaving += res.saving; hits++; }
+      // Issue #3 fix: miss with 0 tokens is NOT "100% saving" — it's a failed search.
+      const savingStr = res.hit ? res.saving.toFixed(1)+'%' : 'n/a (miss)';
+      perQuery.push({ query: q, assignedLevel: res.assignedLevel, topTokens: res.topTokens, saving: savingStr, hit: res.hit, latency: latency.toFixed(2)+'ms' });
     }
     results.push({
       scale: n,
       distribution: "40% post-it, 30% memo, 15% diary, 10% bookshelf, 5% library",
+      seed: SEED,
       fullTokens,
       avgTopTokens: Math.round(totalTopTokens/queriesPerScale),
-      avgSaving: (totalSaving/queriesPerScale).toFixed(1)+'%',
+      // saving averaged over hits only; misses reported separately via hitRate
+      avgSaving: hits ? (totalSaving/hits).toFixed(1)+'%' : 'n/a',
       hitRate: (hits/queriesPerScale*100).toFixed(1)+'%',
       avgLatency: (totalLatencyMs/queriesPerScale).toFixed(2)+'ms',
       fullLatencyEst: (entries.length*0.05).toFixed(2)+'ms (est. Read all md)',
@@ -202,6 +218,7 @@ let json = false;
 for (let i=0;i<args.length;i++) {
   if (args[i]==='--scale') scales = args[++i].split(',').map(Number);
   else if (args[i]==='--queries') queries = Number(args[++i]);
+  else if (args[i]==='--seed') { SEED = Number(args[++i]); rand = mulberry32(SEED); }
   else if (args[i]==='--json') json=true;
 }
 const results = benchmark(scales, queries);

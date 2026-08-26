@@ -20,7 +20,10 @@ function resolveConfig() {
   return { contextRoot: 'agent-context', hierarchy: { levels: { 'post-it': { tokens: 15 }, memo: { tokens: 50 }, diary: { tokens: 200 }, bookshelf: { tokens: 1000 }, library: { tokens: 5000 } }, searchOrder: ['post-it','memo','diary','bookshelf','library'] } };
 }
 const CONFIG = resolveConfig();
-const ROOT = new URL(`../${CONFIG.contextRoot || 'agent-context'}`, import.meta.url).pathname;
+// Issue #3 fix: cwd-first — operate on the user's project, fall back to script-relative only inside the source repo
+const ROOT = (existsSync(join(process.cwd(), 'agent-context.config.json')) || existsSync(join(process.cwd(), CONFIG.contextRoot || 'agent-context')))
+  ? join(process.cwd(), CONFIG.contextRoot || 'agent-context')
+  : new URL(`../${CONFIG.contextRoot || 'agent-context'}`, import.meta.url).pathname;
 const INDEX_PATH = join(ROOT, 'index.json');
 
 const LEVELS = CONFIG.hierarchy?.levels || {

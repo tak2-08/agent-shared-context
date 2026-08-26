@@ -29,7 +29,10 @@ function resolveConfig() {
   return { contextRoot: 'agent-context', live: { radio: {} } };
 }
 const CONFIG = resolveConfig();
-const ROOT = new URL(`../${CONFIG.contextRoot || 'agent-context'}`, import.meta.url).pathname;
+// Issue #3 fix: cwd-first — operate on the user's project, fall back to script-relative only inside the source repo
+const ROOT = (existsSync(join(process.cwd(), 'agent-context.config.json')) || existsSync(join(process.cwd(), CONFIG.contextRoot || 'agent-context')))
+  ? join(process.cwd(), CONFIG.contextRoot || 'agent-context')
+  : new URL(`../${CONFIG.contextRoot || 'agent-context'}`, import.meta.url).pathname;
 const THREADS_DIR = join(ROOT, 'radio/threads');
 const SESSIONS_INBOX_DIR = join(ROOT, 'sessions/inbox');
 
