@@ -72,6 +72,19 @@ node tools/benchmark.mjs                # writes BENCHMARK.md
 
 `id` `type`(유동: issue/work-history/idea/overall-flow 등 자유) `title` `tags` `feature` `agent` `created` `updated` `status` `summary` + `level`(비우면 auto: post-it/memo/diary/bookshelf/library) — see `docs/schema.md` `docs/hierarchy.md`
 
+## Session continuity — 압축 대체
+
+```bash
+# 세션 종료 전
+node tools/agent-handoff.mjs save --session my --task "..." --done "a;b" --next "c;d"
+# 새 세션 복원 (~600 tok)
+Read agent-context/CURRENT.md
+node tools/agent-handoff.mjs load
+node tools/agent-search-lite.mjs "<query>"
+```
+
+**서브에이전트 불필요**: 모든 도구는 단일 Bash 호출. 메인 에이전트가 직접 검색, Node 없으면 Grep 폴백(`^level: post-it` → `^priority: [45]`). See `docs/session-continuity.md`.
+
 ## References
 
 - Concepts from `Coral-Protocol/AgentRadio` (Apache 2.0) and contemporary session collaboration patterns — file-based adaptation. See `docs/radio.md` `docs/sessions.md` `docs/hierarchy.md` `REFERENCES.md`.
