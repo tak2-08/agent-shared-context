@@ -1,0 +1,26 @@
+{
+  "name": "agent-context",
+  "version": "0.1.0",
+  "description": "Token-saving file-based context DB for AI agents — L1 index (50 tok/entry) → L2 graph → L3 md. Git-synced, 82% cheaper.",
+  "keywords": ["agent-context", "ai-agents", "claude-code", "token-optimization", "knowledge-base", "frontmatter", "git-based", "llm-memory"],
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "agent-context": "./tools/agent-context-init.mjs"
+  },
+  "files": ["agent-context/", "tools/", "templates/", "docs/"],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "check": "node tools/agent-context-index.mjs --check && node tools/agent-context-validate.mjs",
+    "index": "node tools/agent-context-index.mjs",
+    "init": "node tools/agent-context-init.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tak2-08/agent-context.git"
+  },
+  "homepage": "https://github.com/tak2-08/agent-context#readme",
+  "author": "tak2-08"
+}

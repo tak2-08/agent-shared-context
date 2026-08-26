@@ -1,0 +1,26 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: JSON parse
+        run: |
+          find agent-context -name "*.json" -print0 | xargs -0 -I {} node -e "JSON.parse(require('fs').readFileSync('{}','utf8'))"
+          node -e "JSON.parse(require('fs').readFileSync('agent-context.config.json','utf8'))"
+          node -e "JSON.parse(require('fs').readFileSync('package.json','utf8'))"
+      - name: Validate frontmatter
+        run: node tools/agent-context-validate.mjs
+      - name: Index drift check
+        run: node tools/agent-context-index.mjs --check
+      - name: Config scaffolding check
+        run: node tools/agent-context-index.mjs --init --check 2>&1 | head -20

@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "generated_at": "2026-08-26T07:51:21.972Z",
+  "_path": "agent-context/graph.json",
+  "description": "기능 연관 그래프 — depends_on/affects로 영향 범위 추적. agent-context.config.json graph.edges로부터 생성됨.",
+  "graph": {
+    "auth": {
+      "depends_on": [],
+      "affects": [
+        "api"
+      ],
+      "files": [
+        "src/auth/index.ts:1"
+      ],
+      "decisions": [],
+      "learnings": []
+    },
+    "api": {
+      "depends_on": [
+        "auth"
+      ],
+      "affects": [
+        "ui"
+      ],
+      "files": [
+        "src/routes/api.ts:1"
+      ],
+      "decisions": [],
+      "learnings": []
+    },
+    "ui": {
+      "depends_on": [
+        "api"
+      ],
+      "affects": [],
+      "files": [
+        "src/components/App.tsx:1",
+        "src/app/globals.css:1"
+      ],
+      "decisions": [],
+      "learnings": []
+    }
+  },
+  "edges": [
+    [
+      "auth",
+      "api"
+    ],
+    [
+      "api",
+      "ui"
+    ]
+  ]
+}

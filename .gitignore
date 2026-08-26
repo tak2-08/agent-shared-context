@@ -1,0 +1,28 @@
+# Path: .gitignore
+# runtime derived — never commit
+/runtime/
+/.agent-context-runtime/
+*.db
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# node
+node_modules/
+npm-debug.log*
+dist/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+
+# os
+.DS_Store
+Thumbs.db
+
+# editor probes / scratch
+/_probe_*.php
+*.tmp
+*.log

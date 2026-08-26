@@ -1,0 +1,94 @@
+{
+  "$schema": "../docs/config.schema.json",
+  "version": 1,
+  "project": {
+    "name": "python-cli",
+    "displayName": "Python CLI",
+    "prefix": "pcli",
+    "description": "Python Click CLI example"
+  },
+  "contextRoot": "agent-context",
+  "archiveDir": "archive",
+  "privateMirror": ".agent-context-runtime",
+  "features": {
+    "cli": {
+      "label": "CLI",
+      "files": [
+        "src/cli.py:1",
+        "src/commands/*.py:1"
+      ],
+      "description": "Click commands"
+    },
+    "storage": {
+      "label": "Storage",
+      "files": [
+        "src/storage/db.py:1"
+      ],
+      "description": "SQLite + FTS"
+    },
+    "api": {
+      "label": "API",
+      "files": [
+        "src/client.py:1"
+      ],
+      "description": "HTTP client"
+    }
+  },
+  "graph": {
+    "edges": [
+      [
+        "storage",
+        "api"
+      ],
+      [
+        "api",
+        "cli"
+      ]
+    ]
+  },
+  "types": [
+    "note",
+    "memo",
+    "idea",
+    "learning",
+    "bug",
+    "decision",
+    "diary",
+    "code-history",
+    "todo"
+  ],
+  "storage": {
+    "backend": "sqlite",
+    "softLimits": {
+      "softLimitChars": 200000,
+      "maxEntries": 1000,
+      "archiveAfterDays": 90
+    }
+  },
+  "lint": {
+    "onIndexRegenerate": true,
+    "forbidWriteOverwrite": true,
+    "requiredKeywords": false
+  },
+  "agents": {
+    "allow": [
+      "claude",
+      "codex",
+      "opencode",
+      "human",
+      "system"
+    ],
+    "default": "system"
+  },
+  "i18n": {
+    "locales": [
+      "ko",
+      "en"
+    ],
+    "defaultLocale": "en"
+  },
+  "compliance": {
+    "law": false,
+    "cssContract": false
+  }
+}

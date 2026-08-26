@@ -1,0 +1,95 @@
+{
+  "$schema": "../docs/config.schema.json",
+  "version": 1,
+  "project": {
+    "name": "nextjs-app",
+    "displayName": "Next.js App",
+    "prefix": "nxa",
+    "description": "Next.js 14 App Router example"
+  },
+  "contextRoot": "agent-context",
+  "archiveDir": "archive",
+  "privateMirror": null,
+  "features": {
+    "auth": {
+      "label": "Auth",
+      "files": [
+        "src/lib/auth.ts:1",
+        "src/app/api/auth/route.ts:1"
+      ],
+      "description": "NextAuth + JWT"
+    },
+    "api": {
+      "label": "API",
+      "files": [
+        "src/app/api/route.ts:1"
+      ],
+      "description": "Route handlers"
+    },
+    "ui": {
+      "label": "UI",
+      "files": [
+        "src/components/ui/button.tsx:1",
+        "src/app/globals.css:1"
+      ],
+      "description": "Design tokens + chrome"
+    }
+  },
+  "graph": {
+    "edges": [
+      [
+        "auth",
+        "api"
+      ],
+      [
+        "api",
+        "ui"
+      ]
+    ]
+  },
+  "types": [
+    "note",
+    "memo",
+    "idea",
+    "learning",
+    "bug",
+    "decision",
+    "diary",
+    "code-history",
+    "todo"
+  ],
+  "storage": {
+    "backend": "json",
+    "softLimits": {
+      "softLimitChars": 200000,
+      "maxEntries": 1000,
+      "archiveAfterDays": 90
+    }
+  },
+  "lint": {
+    "onIndexRegenerate": true,
+    "forbidWriteOverwrite": true,
+    "requiredKeywords": false
+  },
+  "agents": {
+    "allow": [
+      "claude",
+      "codex",
+      "opencode",
+      "human",
+      "system"
+    ],
+    "default": "system"
+  },
+  "i18n": {
+    "locales": [
+      "ko",
+      "en"
+    ],
+    "defaultLocale": "en"
+  },
+  "compliance": {
+    "law": false,
+    "cssContract": false
+  }
+}

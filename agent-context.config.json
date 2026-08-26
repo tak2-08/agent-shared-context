@@ -1,0 +1,112 @@
+{
+  "$schema": "./docs/config.schema.json",
+  "version": 1,
+  "project": {
+    "name": "my-project",
+    "displayName": "My Project",
+    "prefix": "mp",
+    "description": "One-line description for README + package.json"
+  },
+  "contextRoot": "agent-context",
+  "archiveDir": "archive",
+  "privateMirror": null,
+  "features": {
+    "auth": {
+      "label": "Auth",
+      "files": [
+        "src/auth/index.ts:1"
+      ],
+      "description": "JWT + session"
+    },
+    "api": {
+      "label": "API",
+      "files": [
+        "src/routes/api.ts:1"
+      ],
+      "description": "REST handlers"
+    },
+    "ui": {
+      "label": "UI",
+      "files": [
+        "src/components/App.tsx:1",
+        "src/app/globals.css:1"
+      ],
+      "description": "Design tokens + chrome"
+    }
+  },
+  "graph": {
+    "edges": [
+      [
+        "auth",
+        "api"
+      ],
+      [
+        "api",
+        "ui"
+      ]
+    ]
+  },
+  "types": [
+    "note",
+    "memo",
+    "idea",
+    "learning",
+    "bug",
+    "decision",
+    "diary",
+    "code-history",
+    "todo"
+  ],
+  "schema": {
+    "required": [
+      "id",
+      "type",
+      "title",
+      "tags",
+      "feature",
+      "agent",
+      "created",
+      "updated",
+      "status",
+      "summary"
+    ],
+    "featureEnum": "auto",
+    "idPattern": "^[a-z-]+-[0-9]{8}-[a-z0-9]{8}$",
+    "maxSummary": 200,
+    "maxPreview": 60
+  },
+  "storage": {
+    "backend": "json",
+    "softLimits": {
+      "softLimitChars": 200000,
+      "maxEntries": 1000,
+      "archiveAfterDays": 90
+    }
+  },
+  "lint": {
+    "onIndexRegenerate": true,
+    "forbidWriteOverwrite": true,
+    "requiredKeywords": false
+  },
+  "agents": {
+    "allow": [
+      "claude",
+      "codex",
+      "opencode",
+      "human",
+      "system"
+    ],
+    "default": "system"
+  },
+  "i18n": {
+    "locales": [
+      "ko",
+      "en"
+    ],
+    "defaultLocale": "en"
+  },
+  "compliance": {
+    "law": false,
+    "cssContract": false
+  }
+}

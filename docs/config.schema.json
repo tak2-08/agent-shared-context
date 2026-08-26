@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "agent-context.config.json schema",
+  "type": "object",
+  "required": ["project", "contextRoot", "features"],
+  "properties": {
+    "project": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "displayName": { "type": "string" },
+        "prefix": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "contextRoot": { "type": "string" },
+    "archiveDir": { "type": "string" },
+    "privateMirror": { "type": ["string", "null"] },
+    "features": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["label"],
+        "properties": {
+          "label": { "type": "string" },
+          "files": { "type": "array", "items": { "type": "string" } },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "graph": {
+      "type": "object",
+      "properties": {
+        "edges": { "type": "array", "items": { "type": "array", "items": { "type": "string" }, "minItems": 2, "maxItems": 2 } }
+      }
+    },
+    "types": { "type": "array", "items": { "type": "string" } },
+    "storage": {
+      "type": "object",
+      "properties": {
+        "backend": { "type": "string", "enum": ["json", "php-file", "sqlite"] },
+        "softLimits": {
+          "type": "object",
+          "properties": {
+            "softLimitChars": { "type": "integer" },
+            "maxEntries": { "type": "integer" },
+            "archiveAfterDays": { "type": "integer" }
+          }
+        }
+      }
+    }
+  }
+}
