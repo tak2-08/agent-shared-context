@@ -1,83 +1,90 @@
 ---
 name: agent-shared-context
-description: "Inter-agent shared context DB — token-saving 3-layer (index→graph→md) + live radio/sessions for OpenCode/Codex. Share context among agents via git + file inbox, 82% cheaper."
+description: "Inter-agent shared context DB — token-saving 3-layer (index→graph→md) + hierarchical lightweight AI search (post-it→library, 0 LLM) + live radio/sessions for OpenCode/Codex. 82–99% cheaper."
 allowed-tools: "read, edit, write, bash, grep, glob"
 ---
 
 # agent-shared-context — OpenCode / Codex Skill
 
-> **Universal skill** for OpenCode, Codex, and any agent. Same protocol as Claude Code skill, but as a generic markdown skill (no Claude-specific `allowed-tools` enforcement). For Claude Code, see `.claude/skills/agent-shared-context/SKILL.md`.
+> **Universal skill** for OpenCode, Codex, and any agent. Same protocol as Claude Code skill, but as a generic markdown skill. For Claude Code, see `.claude/skills/agent-shared-context/SKILL.md`.
 
 ## Purpose
 
-Let **any** AI agent (Claude/Codex/OpenCode) **share context via git** (persistent) and **via file inbox/radio** (live), with 82% token saving. Inter-agent, multi-agent, cross-session.
+Let **any** AI agent (Claude/Codex/OpenCode) **share context via git** (persistent) and **via file inbox/radio** (live), with **hierarchical lightweight AI search** (post-it 15tok → library 5000tok) — up to 99% saving at scale.
 
 ## When to use
 
-- Recall prior `learnings`/`decisions`/`bugs` before coding → `Read agent-context/index.json`
-- Hand over finding to another agent mid-task → `node tools/agent-sessions.mjs send ...` / `node tools/agent-radio.mjs send ...`
-- Coordinate 4 agents on long-horizon task → `node tools/agent-radio.mjs protocol` (P1-P5)
+- Recall prior `learnings`/`decisions`/`bugs`/`issues`/`work-history` → `node tools/agent-search-lite.mjs "query"`
+- Hand over finding mid-task → `node tools/agent-sessions.mjs send ...` / `node tools/agent-radio.mjs send ...`
+- Coordinate multi-agent long-horizon → `node tools/agent-radio.mjs protocol` (P1-P5)
 
-## 3-step protocol (82% cheaper)
+## Quick start (hierarchical lightweight AI)
 
+```bash
+node tools/agent-search-lite.mjs "your query" --limit 3
+# → assigned level (post-it/memo/diary/bookshelf/library), top 3 with estTokens, saving %
+# 0 LLM calls, 0 install — Node ≥18 only
 ```
-1. Read agent-context/index.json          # L1 — 50 tok/entry
-2. Read agent-context/graph.json + features.json  # L2 — graph
-3. Grep then Read 1~2 md                  # L3 — detail
-```
 
-Never read all md at once.
+## Hierarchy (fluid, cache-like)
+
+| Level | tokens | 은유 |
+|---|---|---|
+| `post-it` | 15 | L1 cache / 포스트잇 — 한 줄 |
+| `memo` | 50 | HBM / 메모지 — 짧은 메모 |
+| `diary` | 200 | DRAM / 일기 — 일지·작업 히스토리 |
+| `bookshelf` | 1000 | SSD / 책장 — feature 전체 흐름 |
+| `library` | 5000 | cold / 도서관 — 프로젝트 아키텍처 |
+
+- **유동적**: `type` 자유 (`issue|work-history|idea|overall-flow` 등)
+- **능동적**: `level` 비우면 가벼운 AI가 자동 배정 (`--assign`)
+- 검색은 가장 작은 레벨부터, 히트 시 중단 (cache hit)
 
 ## Persistent vs live
 
 - **Persistent** (git): `agent-context/*.md` + `index.json` — `git pull` sync, `1 PR = 1 file`, `diary` append-only
-- **Live sessions** (Claude reverse-engineered, file-based): `agent-context/sessions/sessions.json` + `inbox/<name>.jsonl`
-  - `register` `list` `send` `inbox` `wait` — plain text only, `crossSessionInbound` `accept/hold/refuse`, `isolatePeerMachines`, rate-limit/dedup
-  - Same-machine file inbox never traverses servers (like Unix socket); cross-machine via `git push` would traverse git remote
-- **Live radio** (AgentRadio, Apache 2.0): `agent-context/radio/threads/<name>.json`
-  - `create-thread` `send_message` `wait_for_mention` — three primitives, five-phase protocol, **passive awareness** background task (no turn stolen) vs blocking receive
+- **Live sessions** (file-based): `agent-context/sessions/sessions.json` + `inbox/<name>.jsonl`
+  - `register` `list` `send` `inbox` `wait` — plain text only, inbound `accept/hold/refuse`, rate-limit/dedup
+- **Live radio** (file-based threads): `agent-context/radio/threads/<name>.json`
+  - `create-thread` `send_message` `wait_for_mention` — five-phase protocol, passive awareness background vs blocking
 
 ## Quick commands
 
 ```bash
-# Persistent
-Read agent-context/index.json
-Grep pattern="auth" path="agent-context" include="*.md"
-Read agent-context/bugs/xxx--agent.md
+# Search (lightweight AI, hierarchical)
+node tools/agent-search-lite.mjs "auth jwt race" --limit 3
 
-# Live (Claude)
+# Live
 node tools/agent-sessions.mjs register my-session
-node tools/agent-sessions.mjs list
 node tools/agent-sessions.mjs send other-session "msg" --from my-session
-node tools/agent-sessions.mjs inbox my-session
-
-# Live (Radio)
-node tools/agent-radio.mjs create-thread planning "a,b"
-node tools/agent-radio.mjs send planning "hello @codex" --from claude
+node tools/agent-radio.mjs send planning "hello @codex" --mention @codex
 node tools/agent-radio.mjs wait codex --timeout 30000
-node tools/agent-radio.mjs protocol
+
+# Save & validate
+node tools/agent-context-index.mjs      # level auto-assign 포함
+node tools/agent-context-validate.mjs
+
+# Benchmark
+node tools/benchmark.mjs                # writes BENCHMARK.md
 ```
 
-## Frontmatter (10 required)
+## Frontmatter (10 required + level)
 
-`id` `type` `title` `tags` `feature` `agent` `created` `updated` `status` `summary` — see `docs/schema.md` `agent-context/schema.json`
+`id` `type`(유동: issue/work-history/idea/overall-flow 등 자유) `title` `tags` `feature` `agent` `created` `updated` `status` `summary` + `level`(비우면 auto: post-it/memo/diary/bookshelf/library) — see `docs/schema.md` `docs/hierarchy.md`
 
-## Attribution
+## References
 
-- **AgentRadio** (Apache 2.0) `Coral-Protocol/AgentRadio` — three primitives, five-phase P1-P5, passive awareness background vs blocking, no harness modification, no extra LLM calls, model-agnostic — file-based, no `coral-server.jar`. See `docs/radio.md`.
-- **Claude sessions** (reverse-engineered) https://code.claude.com/docs/en/cross-session-messaging v2.1.224 + open-source `LING71671/Open-ClaudeCode` `C293943/claude-code-open` `montisan/claude-code-source-code` — `ListAgents`/`SendMessage`/socket/inbox/inbound/rateLimit — file-based `sessions/inbox/*.jsonl`. See `docs/sessions.md`.
-- **License**: This skill is MIT, referenced concepts are Apache 2.0 with attribution in `REFERENCES.md` and per-doc.
+- Concepts from `Coral-Protocol/AgentRadio` (Apache 2.0) and contemporary session collaboration patterns — file-based adaptation. See `docs/radio.md` `docs/sessions.md` `docs/hierarchy.md` `REFERENCES.md`.
+- Benchmark: `BENCHMARK.md` — objective, critical (hitRate·latency 함께), reproducible.
 
 ## Installation
 
 ```bash
 # OpenCode
 cp -r skills/agent-shared-context ~/.config/opencode/skills/
-# or project-local: already in skills/agent-shared-context/SKILL.md, OpenCode auto-discovers
 
 # Codex
-cp -r skills/agent-shared-context ~/.codex/skills/  # if Codex supports skills dir
-# or use as prompt: Read skills/agent-shared-context/SKILL.md
+cp -r skills/agent-shared-context ~/.codex/skills/
 ```
 
 ## Verification
@@ -85,6 +92,5 @@ cp -r skills/agent-shared-context ~/.codex/skills/  # if Codex supports skills d
 ```bash
 node tools/agent-context-validate.mjs
 node tools/agent-context-index.mjs --check
+node tools/agent-search-lite.mjs "test" --limit 3
 ```
-
-For Claude Code, this skill is also at `.claude/skills/agent-shared-context/SKILL.md` (same content, Claude-specific `allowed-tools`).

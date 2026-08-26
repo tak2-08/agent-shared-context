@@ -55,7 +55,10 @@
     "decision",
     "diary",
     "code-history",
-    "todo"
+    "todo",
+    "issue",
+    "work-history",
+    "overall-flow"
   ],
   "schema": {
     "required": [
@@ -131,7 +134,64 @@
       "noHarnessModification": true,
       "noExtraLLMCalls": true,
       "fivePhaseProtocol": true,
-      "primitives": ["create_thread", "send_message", "wait_for_mention"]
+      "primitives": [
+        "create_thread",
+        "send_message",
+        "wait_for_mention"
+      ]
     }
+  },
+  "typesFluid": true,
+  "hierarchy": {
+    "levels": {
+      "post-it": {
+        "tokens": 15,
+        "desc": "L1 cache — 한 줄, 즉시, 포스트잇",
+        "example": "API endpoint moved to /v2"
+      },
+      "memo": {
+        "tokens": 50,
+        "desc": "HBM — 짧은 메모, 메모지",
+        "example": "JWT race condition fix"
+      },
+      "diary": {
+        "tokens": 200,
+        "desc": "DRAM — 일지, 하루 흐름",
+        "example": "2026-08-27 작업 일지"
+      },
+      "bookshelf": {
+        "tokens": 1000,
+        "desc": "SSD — 책장, feature별 집약",
+        "example": "Auth feature 전체 흐름"
+      },
+      "library": {
+        "tokens": 5000,
+        "desc": "Cold — 도서관, 프로젝트 전체",
+        "example": "전체 아키텍처 결정"
+      }
+    },
+    "autoAssign": true,
+    "searchOrder": [
+      "post-it",
+      "memo",
+      "diary",
+      "bookshelf",
+      "library"
+    ],
+    "lightweightAI": "auto"
+  },
+  "search": {
+    "lightweightAI": true,
+    "model": "lite",
+    "autoAssign": true,
+    "tokenBudget": 2000,
+    "hierarchical": true,
+    "order": [
+      "post-it",
+      "memo",
+      "diary",
+      "bookshelf",
+      "library"
+    ]
   }
 }

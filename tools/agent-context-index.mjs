@@ -74,6 +74,27 @@ const GRAPH_PATH = join(ROOT, 'graph.json');
 const FEATURES_PATH = join(ROOT, 'features.json');
 const SCHEMA_PATH = join(ROOT, 'schema.json');
 
+// Hierarchy — cache-like levels, lightweight AI auto-assign (0 LLM calls)
+const LEVELS = CONFIG.hierarchy?.levels || {
+  'post-it': { tokens: 15 },
+  memo: { tokens: 50 },
+  diary: { tokens: 200 },
+  bookshelf: { tokens: 1000 },
+  library: { tokens: 5000 },
+};
+const LEVEL_ORDER = CONFIG.hierarchy?.searchOrder || ['post-it','memo','diary','bookshelf','library'];
+
+function assignLevel(content, priority = 3, affects = []) {
+  // Lightweight AI: rule-based, 0 LLM calls — like cache hierarchy small→large
+  const len = content.length;
+  const aff = Array.isArray(affects) ? affects.length : 0;
+  if (len <= 30 && priority >= 4 && aff === 0) return 'post-it';
+  if (len <= 80 && priority >= 3) return 'memo';
+  if (len <= 400) return 'diary';
+  if (len <= 2000 || aff >= 2) return 'bookshelf';
+  return 'library';
+}
+
 function parseFrontmatter(src) {
   const m = src.match(/---\s*\n([\s\S]*?)\n---\s*\n/);
   if (!m) return null;
@@ -262,6 +283,7 @@ for (const f of files) {
   entries.push({
     id: String(fm.id || ''),
     type: String(fm.type || ''),
+    level: fm.level ? String(fm.level) : assignLevel(src, Number(fm.priority || 3), Array.isArray(fm.affects) ? fm.affects : []),
     title: String(fm.title || '').slice(0, 80),
     tags: Array.isArray(fm.tags) ? fm.tags : [],
     feature: String(fm.feature || 'global'),
