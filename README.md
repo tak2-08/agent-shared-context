@@ -207,12 +207,58 @@ keywords:
 
 - **파일 기반**: no server, no Docker, no binary — `agent-shared-context`는 범용 `file` inbox/threads로 동작. 상세는 `docs/radio.md` `docs/sessions.md` `REFERENCES.md`.
 
+## 🏢 회의실 (Meeting Room) — NEW
+
+회사에서 회의하는 모든 소통 방식을 지원하는 **파일 기반 회의실**:
+
+```bash
+# 회의 개설 (8가지 타입)
+node tools/agent-meeting.mjs create --title "Sprint Planning" --type planning \
+  --moderator alice --participants bob,charlie --agenda "Q4 목표"
+
+# 참가 / 시작
+node tools/agent-meeting.mjs join <id> bob --role participant
+node tools/agent-meeting.mjs start <id> alice
+
+# 발언 (8가지 종류)
+node tools/agent-meeting.mjs speak <id> bob "JWT 검증 분리 시작" --kind statement --refs issue-12
+node tools/agent-meeting.mjs speak <id> alice "작업 분배: bob-auth" --kind action-item
+node tools/agent-meeting.mjs speak <id> charlie "순환 의존성 발견" --kind objection
+
+# 종료 → 회의록 자동 생성 (agent-context 엔트리 type: meeting + 검색 가능)
+node tools/agent-meeting.mjs end <id> alice
+node tools/agent-meeting.mjs minutes <id>
+```
+
+**회의 타입**: `discussion`(토론) · `presentation`(발표) · `rebuttal`(반박) · `decision`(의사결정) · `standup`(스탠드업) · `retrospective`(회고) · `planning`(계획) · `review`(리뷰)
+
+**발언 종류**: `statement` · `question` · `answer` · `objection` · `agreement` · `summary` · `action-item` · `decision`
+
+**회의록**: `agent-context/meetings/minutes/` + `agent-context/notes/`(type: meeting) 양쪽 저장 → `ac.mjs history "회의"` 로 검색 가능. Opencode의 `Radio-Assembler`(`.opencode/agents/radio-assembler.md`)는 회의실을 **유일한 조율 버스**로 사용 (radio 미사용).
+
+## 🧠 유저별 개인 메모리 (Per-user Memory) — NEW
+
+설치한 유저마다 **자신의 GitHub 계정에 private memory repo**가 자동 생성된다. 중앙 `tak2-08/memory`는 사용하지 않는다.
+
+```bash
+# 최초 실행 시: 본인 GitHub에 private repo 자동 생성 (gh auth login 필요)
+node tools/ac.mjs memory status
+# → https://github.com/<username>/agent-shared-context-memory
+
+node tools/ac.mjs memory write daily "결정: JWT는 RS256만 허용"
+node tools/ac.mjs memory search "JWT"
+node tools/ac.mjs memory get MEMORY.md
+node tools/ac.mjs memory dream --days 7  # REMEMBER/DECISION 등 승격 후보 추출
+```
+
+모든 데이터는 **유저 개인 repo**에만 저장 (로컬 캐시: `~/.cache/agent-memory/repo`). 설정: `agent-context.config.json` → `live.memory`.
+
 ## 🤝 AgentRadio와 함께 쓰기 (강력 추천)
 
 `agent-shared-context`는 **[AgentRadio](https://github.com/tak2-08/AgentRadio)**(수동적 인지 멀티에이전트 협업 프로토콜, `arXiv:2607.28430`)와 **아주 잘 맞물린다**:
 
 - **지식 저장소 ↔ 협업 레이어**: `agent-shared-context`를 *구조화된 공유 지식 DB*(`index/graph/features.json` + `*.md`)로, AgentRadio를 *실시간 협업/오케스트레이션 레이어*(팀장/대리/팀원 릴레이, `/토론`, 라디오 버스)로 쓰면, 에이전트는 **공유 기억**과 **조율된 멀티에이전트 실행**을 동시에 갖게 된다.
-- **범용 메모리까지**: AgentRadio의 `memory-core` 플러그인은 GitHub 저장소 `tak2-08/memory`를 모든 세션/환경(OpenCode/Claude Code/Codex)이 공유하는 장기 기억으로 쓴다 — `agent-shared-context`(프로젝트 지식) + `tak2-08/memory`(횡단 장기 기억) 조합으로 완결된 협업 스택이 된다.
+- **범용 메모리까지**: AgentRadio의 `memory-core` 플러그인 + `agent-shared-context`의 `agent-memory.mjs`는 **설치 유저의 개인 GitHub repo**를 장기 기억으로 쓴다 (최초 사용 시 자동 생성, 중앙 repo 미사용) — `agent-shared-context`(프로젝트 지식) + 유저 개인 memory(횡단 장기 기억) 조합으로 완결된 협업 스택이 된다.
 - **같은 철학**: 둘 다 "서버 없이 파일 기반으로" 동작한다. `agent-shared-context`의 `tools/agent-radio.mjs`는 AgentRadio의 passive-awareness를 file-based로 재구현했다(서버 미포함).
 
 AgentRadio README의 "OpenCode / Claude Code / Codex Integration" 섹션도 이 저장소를 협업 대상으로 가리킨다.
