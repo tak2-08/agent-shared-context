@@ -7,7 +7,7 @@
 // not tool-call transcripts. "used tool X" is noise; "result was Y, verify at Z"
 // is signal. refs[] holds verification links.
 import { spawnSync } from 'node:child_process';
-import { existsSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const TOOLS = new URL('.', import.meta.url).pathname;
@@ -31,6 +31,17 @@ function today() { return new Date().toISOString().slice(0, 10); }
 function slug(s) {
   return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'entry';
 }
+// Issue #10 fix: YAML-safe double-quoted scalar — escape \ and ", flatten CR/LF,
+// so user input (title/summary/refs) can never break out of the frontmatter block
+// and inject arbitrary YAML fields (e.g. priority override via embedded newline).
+function yq(s) {
+  return '"' + String(s).replace(/[\r\n]+/g, ' ').replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+}
+// Issue #10 fix: filename-safe component — strip path separators / reserved chars
+// so --agent or title can never traverse directories or break the path.
+function fnamePart(s) {
+  return String(s).replace(/[\/\\:*?"<>|]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'x';
+}
 function resolveRoot() {
   const cwd = process.cwd();
   if (existsSync(join(cwd, 'agent-context.config.json')) || existsSync(join(cwd, 'agent-context')))
@@ -44,7 +55,9 @@ function pluralDir(type) {
   return map[type] || 'notes';
 }
 function nextId(type) {
-  return `${type}-${today().replace(/-/g, '')}-${Math.random().toString(16).slice(2, 10)}`;
+  // Issue #10 fix: pad the random hex to 8 chars so it always matches idPattern
+  // (^[a-z-]+-[0-9]{8}-[a-z0-9]{8}$) — Math.random().toString(16) can be shorter.
+  return `${type}-${today().replace(/-/g, '')}-${Math.random().toString(16).slice(2, 10).padEnd(8, '0')}`;
 }
 
 // Generic entry creator — outcome-based template with refs field
@@ -55,43 +68,55 @@ function createEntry(opts) {
   const dir = pluralDir(type);
   const targetDir = join(root, dir);
   mkdirSync(targetDir, { recursive: true });
+  const id = nextId(type);
+  // Issue #10 fix: unique filenames. slug() strips non-ASCII, so Korean/CJK/emoji
+  // titles all collapse to 'entry' — silently overwriting each other (data loss).
+  // If the slug fell back, or the computed filename already exists, disambiguate
+  // with the random hex from the entry id.
+  const idHex = id.split('-').pop();
   let fname;
+  const baseSlug = slug(title);
+  const uniqSlug = baseSlug === 'entry' ? `entry-${idHex}` : baseSlug;
   if (type === 'decision') {
     let n = 1;
     try { n = readdirSync(targetDir).filter(f => /^\d{4}-/.test(f)).length + 1; } catch {}
-    fname = `${String(n).padStart(4, '0')}-${slug(title)}.md`;
+    fname = `${String(n).padStart(4, '0')}-${uniqSlug}.md`;
   } else if (type === 'diary') {
     fname = `${today()}.md`;
   } else {
-    fname = `${today()}-${slug(title)}--${agent}.md`;
+    fname = `${today()}-${uniqSlug}--${fnamePart(agent)}.md`;
+  }
+  if (type !== 'diary' && existsSync(join(targetDir, fname))) {
+    // same-day same-title collision — never overwrite an existing entry
+    fname = fname.replace(/\.md$/, `-${idHex}.md`);
   }
   const path = join(targetDir, fname);
   if (existsSync(path) && type === 'diary') {
     // diary append-only: append a section instead of failing
     const prev = readdirSync(targetDir).includes(fname)
-      ? require('fs').readFileSync(path, 'utf8') : '';
+      ? readFileSync(path, 'utf8') : '';
     writeFileSync(path, prev + `\n## ${new Date().toTimeString().slice(0,5)} ${agent} — ${title}\n- ${summary}\n`, 'utf8');
   } else {
     const lines = [
       `<!-- Path: agent-context/${dir}/${fname} -->`,
       '---',
-      `id: ${nextId(type)}`,
+      `id: ${id}`,
       `type: ${type}`,
-      `title: "${String(title).slice(0, 80)}"`,
+      `title: ${yq(String(title).slice(0, 80))}`,
       `tags: [${type}]`,
-      `feature: ${feature}`,
+      `feature: ${yq(feature)}`,
       `level: ""`,
       `scope: global`,
-      `agent: ${agent}`,
+      `agent: ${yq(agent)}`,
       `created: ${new Date().toISOString()}`,
       `updated: ${new Date().toISOString()}`,
-      `status: ${status}`,
-      `priority: ${priority}`,
-      `summary: "${String(summary || title).slice(0, 180)}"`,
+      `status: ${yq(status)}`,
+      `priority: ${Number.isInteger(priority) && priority >= 1 && priority <= 5 ? priority : 3}`,
+      `summary: ${yq(String(summary || title).slice(0, 180))}`,
     ];
     if (refs.length) {
       lines.push('refs:');
-      refs.forEach(r => lines.push(`  - "${r}"`));
+      refs.forEach(r => lines.push(`  - ${yq(r)}`));
     }
     lines.push('---', '', body || '## 결과\n\n(도구 호출 로그 아님 — 결론만 기록. 검증은 refs 링크로)\n');
     writeFileSync(path, lines.join('\n') + '\n', 'utf8');

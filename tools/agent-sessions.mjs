@@ -16,6 +16,13 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, appendFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 
+// Issue #10 fix: session names are used as filenames (sessions/inbox/<name>.jsonl)
+// and as registry keys. Reject anything that could traverse directories or break
+// the path. Allowed: [A-Za-z0-9._@-], must not be empty or contain '..'.
+function validName(n) {
+  return typeof n === 'string' && /^[A-Za-z0-9][A-Za-z0-9._@-]{0,63}$/.test(n) && !n.includes('..');
+}
+
 function resolveConfig() {
   const candidates = [
     new URL('../agent-context.config.json', import.meta.url).pathname,
@@ -50,6 +57,16 @@ function readSessionsConfig() {
   try { return JSON.parse(readFileSync(SESSIONS_CONFIG_PATH, 'utf8')); } catch { return { crossSessionInbound: 'accept', isolatePeerMachines: false, rateLimit: { maxPerSender: 10, dedupWindowMs: 5000, maxInbox: 50 } }; }
 }
 
+// Issue #10 fix: session names become filenames (inbox/<name>.jsonl). Reject path
+// separators / traversal / control chars up front — previously `register "a/b"`
+// wrote the registry entry, then crashed ENOENT on the inbox write, permanently
+// poisoning the name (re-register → already:true, send → crash).
+function isValidName(name) {
+  return typeof name === 'string' && name.length > 0 && name.length <= 128
+    && !/[\/\\\0]/.test(name) && !name.includes('..');
+}
+const INVALID_NAME_MSG = n => `invalid session name '${n}' — must be 1-128 chars, no '/', '\\', '..' or control characters`;
+
 export function listAgents() {
   const sessions = readSessions();
   const cfg = readSessionsConfig();
@@ -60,6 +77,7 @@ export function listAgents() {
 }
 
 export function registerSession(name, opts = {}) {
+  if (!isValidName(name)) return { error: INVALID_NAME_MSG(name) };
   const sessions = readSessions();
   if (sessions.find(s => s.name === name)) return { already: true, name };
   const entry = {
@@ -82,6 +100,7 @@ export function registerSession(name, opts = {}) {
 
 export function sendMessage(target, content, opts = {}) {
   // Like Claude's SendMessage: plain text only, never history/files
+  if (!isValidName(target)) return { error: INVALID_NAME_MSG(target) };
   if (typeof content !== 'string') content = String(content);
   if (content.length > 4000) content = content.slice(0, 4000) + '...[truncated]';
   // plainTextOnly: strip any slash command that would execute, like /compact
@@ -150,6 +169,7 @@ export function sendMessage(target, content, opts = {}) {
 }
 
 export function readInbox(session) {
+  if (!isValidName(session)) return { error: INVALID_NAME_MSG(session) };
   const inboxPath = join(INBOX_DIR, `${session}.jsonl`);
   if (!existsSync(inboxPath)) return [];
   try {
@@ -162,6 +182,7 @@ export function readInbox(session) {
 export function waitForMention(session, timeout = 30000) {
   // Like AgentRadio wait_for_mention / Claude wait: blocks until mention arrives, returns with full thread snapshot
   // File-based poll every 500ms until timeout
+  if (!isValidName(session)) return { error: INVALID_NAME_MSG(session) };
   const start = Date.now();
   const poll = () => {
     const inbox = readInbox(session);
@@ -195,6 +216,12 @@ function readThreadsSnapshot() {
 // CLI
 if (import.meta.url === `file://${process.argv[1]}`) {
   const cmd = process.argv[2];
+  // Issue #10 fix: helper to print result and exit 1 on {error} — previously
+  // unknown-target/unknown-thread returned {error} with exit 0, invisible to CI.
+  function print(res) {
+    if (res && res.error) { console.error(JSON.stringify(res, null, 2)); process.exit(1); }
+    console.log(JSON.stringify(res, null, 2));
+  }
   if (!cmd || cmd === '--help' || cmd === '-h') {
     console.log(`Usage: node tools/agent-sessions.mjs <command> [args]
 Commands (Claude cross-session reverse-engineered, file-based):
@@ -213,30 +240,30 @@ Examples:
     process.exit(0);
   }
   if (cmd === 'list') {
-    console.log(JSON.stringify(listAgents(), null, 2));
+    print(listAgents());
   } else if (cmd === 'register') {
     const name = process.argv[3];
     if (!name) { console.error('register requires <name>'); process.exit(1); }
-    console.log(JSON.stringify(registerSession(name), null, 2));
+    print(registerSession(name));
   } else if (cmd === 'send') {
     const target = process.argv[3];
     const msg = process.argv[4];
     if (!target || !msg) { console.error('send requires <target> <msg>'); process.exit(1); }
     const fromIdx = process.argv.indexOf('--from');
     const from = fromIdx !== -1 ? process.argv[fromIdx+1] : undefined;
-    console.log(JSON.stringify(sendMessage(target, msg, { from }), null, 2));
+    print(sendMessage(target, msg, { from }));
   } else if (cmd === 'inbox') {
     const sess = process.argv[3];
     if (!sess) { console.error('inbox requires <session>'); process.exit(1); }
-    console.log(JSON.stringify(readInbox(sess), null, 2));
+    print(readInbox(sess));
   } else if (cmd === 'wait') {
     const sess = process.argv[3];
     if (!sess) { console.error('wait requires <session>'); process.exit(1); }
     const tIdx = process.argv.indexOf('--timeout');
     const timeout = tIdx !== -1 ? Number(process.argv[tIdx+1]) : 30000;
-    console.log(JSON.stringify(waitForMention(sess, timeout), null, 2));
+    print(waitForMention(sess, timeout));
   } else if (cmd === 'config') {
-    console.log(JSON.stringify(readSessionsConfig(), null, 2));
+    print(readSessionsConfig());
   } else {
     console.error(`unknown command ${cmd}`); process.exit(1);
   }
