@@ -1,0 +1,17 @@
+{
+  "id": "meeting-20260827-d83178e9",
+  "title": "ID Test",
+  "type": "decision",
+  "moderator": "alice",
+  "participants": [
+    "alice",
+    "bob"
+  ],
+  "agenda": "",
+  "status": "open",
+  "created_at": "2026-08-27T07:57:09.714Z",
+  "started_at": null,
+  "ended_at": null,
+  "transcript": "meetings/transcripts/meeting-20260827-d83178e9.jsonl",
+  "minutes": null
+}

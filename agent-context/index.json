@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-08-27T07:18:16.684Z",
+  "generated_at": "2026-08-27T07:57:27.039Z",
   "generated_by": "agent-context-index.mjs",
   "_path": "agent-context/index.json",
   "description": "L1 압축 카탈로그 — 저용량 에이전트가 가장 먼저 읽는 파일. preview 60자 + summary 120자로 본문 Read 없이 관련성 판단.",
@@ -8,16 +8,16 @@
     "soft_limit_chars": 200000,
     "max_entries": 1000,
     "should_compress": false,
-    "total_chars": 3042,
-    "total_entries": 5
+    "total_chars": 5379,
+    "total_entries": 8
   },
   "counts": {
     "note": 1,
     "learning": 1,
     "handoff": 1,
-    "meeting": 1,
+    "meeting": 4,
     "issue": 1,
-    "total": 5
+    "total": 8
   },
   "entries": [
     {
@@ -88,6 +88,75 @@
       "related": [],
       "affects": [],
       "chars": 1117
+    },
+    {
+      "id": "meeting-20260827-0e98116e",
+      "type": "meeting",
+      "level": "diary",
+      "title": "Final Test",
+      "tags": [
+        "meeting",
+        "decision"
+      ],
+      "feature": "global",
+      "scope": "global",
+      "agent": "leader",
+      "created": "2026-08-27T07:57:17.961Z",
+      "updated": "2026-08-27T07:57:18.300Z",
+      "status": "done",
+      "priority": 4,
+      "summary": "Meeting: 의사결정 - Final Test",
+      "preview": "Meeting: 의사결정 - Final Test",
+      "path": "notes/2026-08-27-final-test--meeting.md",
+      "related": [],
+      "affects": [],
+      "chars": 692
+    },
+    {
+      "id": "meeting-20260827-39bc4a6c",
+      "type": "meeting",
+      "level": "diary",
+      "title": "Final Test",
+      "tags": [
+        "meeting",
+        "decision"
+      ],
+      "feature": "global",
+      "scope": "global",
+      "agent": "leader",
+      "created": "2026-08-27T07:57:17.961Z",
+      "updated": "2026-08-27T07:57:18.299Z",
+      "status": "done",
+      "priority": 4,
+      "summary": "Meeting: 의사결정 - Final Test (2 participants)",
+      "preview": "Meeting: 의사결정 - Final Test (2 participants)",
+      "path": "meetings/minutes/2026-08-27-final-test--meeting-20260827-a8b7d5e3.md",
+      "related": [],
+      "affects": [],
+      "chars": 898
+    },
+    {
+      "id": "meeting-20260827-561c1ef8",
+      "type": "meeting",
+      "level": "diary",
+      "title": "Auth Refactor",
+      "tags": [
+        "meeting",
+        "planning"
+      ],
+      "feature": "global",
+      "scope": "global",
+      "agent": "radio-assembler",
+      "created": "2026-08-27T07:55:29.660Z",
+      "updated": "2026-08-27T07:55:59.948Z",
+      "status": "done",
+      "priority": 4,
+      "summary": "Meeting: 계획 수립 - Auth Refactor",
+      "preview": "Meeting: 계획 수립 - Auth Refactor",
+      "path": "notes/2026-08-27-auth-refactor--meeting.md",
+      "related": [],
+      "affects": [],
+      "chars": 747
     },
     {
       "id": "meeting-20260827-92296c17",

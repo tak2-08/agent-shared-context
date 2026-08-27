@@ -1,0 +1,6 @@
+{"type":"system","event":"start","agent":"radio-assembler","timestamp":"2026-08-27T07:55:38.780Z","content":"Meeting started: Auth Refactor (계획 수립|planning)"}
+{"type":"speech","agent":"radio-assembler","role":"participant","kind":"action-item","content":"작업 분배: radio-member-1=auth.ts 리팩토링, radio-member-2=api.ts 검증","refs":["decision-1"],"timestamp":"2026-08-27T07:55:49.147Z"}
+{"type":"speech","agent":"radio-member-1","role":"participant","kind":"statement","content":"auth.ts 리팩토링 시작, JWT 검증 로직 분리 중","refs":["issue-12"],"timestamp":"2026-08-27T07:55:49.261Z"}
+{"type":"speech","agent":"radio-member-2","role":"participant","kind":"objection","content":"api.ts에서 auth 모듈 순환 의존성 발견","refs":["auth.ts:45"],"timestamp":"2026-08-27T07:55:49.375Z"}
+{"type":"speech","agent":"radio-assembler","role":"participant","kind":"decision","content":"순환 의존성 해결: auth 모듈 독립 패키지로 분리 승인","refs":["decision-2"],"timestamp":"2026-08-27T07:55:59.833Z"}
+{"type":"system","event":"end","agent":"radio-assembler","timestamp":"2026-08-27T07:56:00.031Z","content":"Meeting ended"}

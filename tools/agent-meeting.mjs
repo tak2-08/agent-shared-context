@@ -80,7 +80,7 @@ function createMeeting(opts) {
     console.error(`invalid type '${type}'. Valid: ${Object.keys(MEETING_TYPES).join(', ')}`);
     process.exit(1);
   }
-  const id = `mtg-${today().replace(/-/g, '')}-${Math.random().toString(36).slice(2, 8)}`;
+  const id = `meeting-${today().replace(/-/g, '')}-${Math.random().toString(16).slice(2, 10).padEnd(8, '0')}`;
   const meeting = {
     id,
     title,
@@ -178,9 +178,10 @@ function generateMinutes(m, transcript) {
   const actionItems = speeches.filter(s => s.kind === 'action-item');
   const objections = speeches.filter(s => s.kind === 'objection');
   const questions = speeches.filter(s => s.kind === 'question');
+  const meetingEntryId = `meeting-${today().replace(/-/g, '')}-${Math.random().toString(16).slice(2, 10).padEnd(8, '0')}`;
   return `<!-- Path: agent-context/meetings/minutes/${today()}-${slug(m.title)}--${m.id}.md -->
 ---
-id: meeting-${m.id}
+id: ${meetingEntryId}
 type: meeting
 title: ${yq(m.title)}
 tags: [meeting, ${m.type}]
@@ -248,7 +249,7 @@ function saveMeetingEntry(m, transcript) {
 분록: ${m.minutes}`;
   const md = [
     `<!-- Path: agent-context/notes/${fname} -->`, '---',
-    `id: meeting-${date.replace(/-/g,'')}-${Math.random().toString(16).slice(2,10)}`,
+    `id: meeting-${date.replace(/-/g,'')}-${Math.random().toString(16).slice(2,10).padEnd(8,'0')}`,
     `type: meeting`, `level: diary`,
     `title: ${yq(m.title)}`,
     `tags: [meeting, ${m.type}]`, `feature: global`, `scope: global`, `agent: ${yq(m.moderator)}`,

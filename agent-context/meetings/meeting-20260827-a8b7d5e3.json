@@ -1,0 +1,17 @@
+{
+  "id": "meeting-20260827-a8b7d5e3",
+  "title": "Final Test",
+  "type": "decision",
+  "moderator": "leader",
+  "participants": [
+    "leader",
+    "m1"
+  ],
+  "agenda": "",
+  "status": "ended",
+  "created_at": "2026-08-27T07:57:17.961Z",
+  "started_at": "2026-08-27T07:57:18.076Z",
+  "ended_at": "2026-08-27T07:57:18.298Z",
+  "transcript": "meetings/transcripts/meeting-20260827-a8b7d5e3.jsonl",
+  "minutes": "meetings/minutes/2026-08-27-final-test--meeting-20260827-a8b7d5e3.md"
+}
