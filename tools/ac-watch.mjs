@@ -19,13 +19,23 @@ import { execFileSync } from 'node:child_process';
 import { writeFileSync, readFileSync, existsSync, mkdirSync, readdirSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
 
+// Issue #14 fix: require an initialized project in cwd; never silently fall back
+// to the source repo (that would pollute the package install / npx cache).
+function resolveProjectRoot() {
+  const cwd = process.cwd();
+  if (existsSync(join(cwd, 'agent-context.config.json')) || existsSync(join(cwd, 'agent-context')))
+    return join(cwd, 'agent-context');
+  process.stderr.write("agent-context가 초기화되지 않았습니다. 먼저 'agent-context-init.mjs --yes' 를 실행하세요.\n");
+  process.stderr.write("(agent-context not initialized in cwd; run 'agent-context-init.mjs --yes' first.)\n");
+  process.stderr.write("cwd: " + cwd + "\n");
+  process.exit(1);
+}
+const ROOT = resolveProjectRoot();
 const CONFIG = (() => {
-  for (const p of [join(process.cwd(),'agent-context.config.json'), new URL('../agent-context.config.json', import.meta.url).pathname])
-    if (existsSync(p)) return JSON.parse(readFileSync(p,'utf8'));
+  const p = join(process.cwd(), 'agent-context.config.json');
+  if (existsSync(p)) return JSON.parse(readFileSync(p, 'utf8'));
   return {};
 })();
-const ROOT = (existsSync(join(process.cwd(),'agent-context')) ? join(process.cwd(),'agent-context')
-             : new URL('../agent-context', import.meta.url).pathname);
 const CAND = join(ROOT, '.candidates');
 
 function git(args) {

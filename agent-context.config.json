@@ -187,6 +187,7 @@
     "autoAssign": true,
     "tokenBudget": 2000,
     "hierarchical": true,
+    "minHitWeight": 2,
     "order": [
       "post-it",
       "memo",
@@ -221,6 +222,47 @@
       "pagination": [
         "페이지네이션",
         "cursor"
+      ],
+      "billing": [
+        "payments",
+        "charge",
+        "invoice",
+        "결제"
+      ],
+      "payments": [
+        "billing",
+        "charge",
+        "invoice",
+        "결제",
+        "payment"
+      ],
+      "payment": [
+        "billing",
+        "payments",
+        "charge",
+        "invoice",
+        "결제"
+      ],
+      "charge": [
+        "billing",
+        "payments",
+        "invoice",
+        "결제",
+        "payment"
+      ],
+      "invoice": [
+        "billing",
+        "payments",
+        "charge",
+        "결제",
+        "payment"
+      ],
+      "결제": [
+        "billing",
+        "payments",
+        "charge",
+        "invoice",
+        "payment"
       ]
     }
   }
