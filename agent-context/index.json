@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-08-26T12:27:23.182Z",
+  "generated_at": "2026-08-27T07:18:16.684Z",
   "generated_by": "agent-context-index.mjs",
   "_path": "agent-context/index.json",
   "description": "L1 압축 카탈로그 — 저용량 에이전트가 가장 먼저 읽는 파일. preview 60자 + summary 120자로 본문 Read 없이 관련성 판단.",
@@ -8,15 +8,16 @@
     "soft_limit_chars": 200000,
     "max_entries": 1000,
     "should_compress": false,
-    "total_chars": 2345,
-    "total_entries": 4
+    "total_chars": 3042,
+    "total_entries": 5
   },
   "counts": {
     "note": 1,
     "learning": 1,
     "handoff": 1,
+    "meeting": 1,
     "issue": 1,
-    "total": 4
+    "total": 5
   },
   "entries": [
     {
@@ -87,6 +88,29 @@
       "related": [],
       "affects": [],
       "chars": 1117
+    },
+    {
+      "id": "meeting-20260827-92296c17",
+      "type": "meeting",
+      "level": "diary",
+      "title": "Test Meeting",
+      "tags": [
+        "meeting",
+        "planning"
+      ],
+      "feature": "global",
+      "scope": "global",
+      "agent": "alice",
+      "created": "2026-08-27T07:17:38.178Z",
+      "updated": "2026-08-27T07:18:16.612Z",
+      "status": "done",
+      "priority": 4,
+      "summary": "Meeting: 계획 수립 - Test Meeting",
+      "preview": "Meeting: 계획 수립 - Test Meeting",
+      "path": "notes/2026-08-27-test-meeting--meeting.md",
+      "related": [],
+      "affects": [],
+      "chars": 697
     },
     {
       "id": "issue-20260826-b48a3b55",

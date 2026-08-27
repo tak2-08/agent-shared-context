@@ -139,6 +139,15 @@ const HELP = `Usage: node tools/ac.mjs <command> [args]
   import   [file]                                                      세션 불러오기
   current                                                             현재 포인터
 
+회의실 명령 (Meeting Room):
+  meeting create  --title "..." [--type discussion] [--moderator A] [--participants a,b] [--agenda "..."]
+  meeting join    <meeting-id> <agent> [--role participant]
+  meeting start   <meeting-id> <agent>
+  meeting speak   <meeting-id> <agent> "content" [--kind statement|question|answer|objection|agreement|summary|action-item|decision] [--refs a,b]
+  meeting end     <meeting-id> <agent>
+  meeting list
+  meeting minutes <meeting-id>
+
 기록 명령 (결과 중심 — 도구 로그 아님):
   issue    --title "..." [--feature F] [--agent A] [--summary "..."] [--refs a,b]
   learning --title "..." [--cause C] [--fix F2] [--lesson L] [동일 옵션]
@@ -160,6 +169,10 @@ switch (cmd) {
   case 'search':  run('agent-search-lite.mjs', rest); break;
   case 'index':   run('agent-context-index.mjs', rest); break;
   case 'validate':run('agent-context-validate.mjs', rest); break;
+  case 'meeting': {
+    run('agent-meeting.mjs', args.slice(1));
+    break;
+  }
   case 'issue':
   case 'learning':
   case 'idea':

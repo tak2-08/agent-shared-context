@@ -59,7 +59,8 @@
     "issue",
     "work-history",
     "overall-flow",
-    "handoff"
+    "handoff",
+    "meeting"
   ],
   "schema": {
     "required": [
@@ -139,6 +140,37 @@
         "create_thread",
         "send_message",
         "wait_for_mention"
+      ]
+    },
+    "meetings": {
+      "dir": "agent-context/meetings",
+      "transcriptsDir": "agent-context/meetings/transcripts",
+      "minutesDir": "agent-context/meetings/minutes",
+      "types": [
+        "discussion",
+        "presentation",
+        "rebuttal",
+        "decision",
+        "standup",
+        "retrospective",
+        "planning",
+        "review"
+      ],
+      "roles": [
+        "moderator",
+        "presenter",
+        "participant",
+        "observer"
+      ],
+      "speechKinds": [
+        "statement",
+        "question",
+        "answer",
+        "objection",
+        "agreement",
+        "summary",
+        "action-item",
+        "decision"
       ]
     }
   },

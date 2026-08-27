@@ -1,0 +1,4 @@
+{"type":"system","event":"start","agent":"alice","timestamp":"2026-08-27T07:17:50.959Z","content":"Meeting started: Test Meeting (계획 수립|planning)"}
+{"type":"speech","agent":"bob","role":"participant","kind":"statement","content":"인증 모듈 리팩토링 시작","refs":["issue-12"],"timestamp":"2026-08-27T07:17:55.904Z"}
+{"type":"speech","agent":"alice","role":"participant","kind":"action-item","content":"작업 분배: bob-auth, charlie-api","refs":["decision-1"],"timestamp":"2026-08-27T07:18:05.438Z"}
+{"type":"system","event":"end","agent":"alice","timestamp":"2026-08-27T07:18:16.691Z","content":"Meeting ended"}
