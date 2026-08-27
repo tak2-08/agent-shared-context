@@ -1,0 +1,22 @@
+{
+  "id": "mtg-20260827-9z2jlw",
+  "title": "Test Meeting",
+  "type": "planning",
+  "moderator": "alice",
+  "participants": [
+    "alice",
+    "bob",
+    "charlie",
+    "david"
+  ],
+  "agenda": "Test agenda",
+  "status": "ended",
+  "created_at": "2026-08-27T07:17:38.178Z",
+  "started_at": "2026-08-27T07:17:50.959Z",
+  "ended_at": "2026-08-27T07:18:16.610Z",
+  "transcript": "meetings/transcripts/mtg-20260827-9z2jlw.jsonl",
+  "minutes": "meetings/minutes/2026-08-27-test-meeting--mtg-20260827-9z2jlw.md",
+  "roles": {
+    "david": "presenter"
+  }
+}
