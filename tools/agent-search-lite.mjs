@@ -10,19 +10,28 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
+// Issue #14 fix: require an initialized project in cwd; never silently fall back
+// to the source repo.
+function resolveProjectRoot() {
+  const cwd = process.cwd();
+  const ctxRoot = 'agent-context';
+  if (existsSync(join(cwd, 'agent-context.config.json')) || existsSync(join(cwd, ctxRoot)))
+    return join(cwd, ctxRoot);
+  process.stderr.write("agent-context가 초기화되지 않았습니다. 먼저 'agent-context-init.mjs --yes' 를 실행하세요.\n");
+  process.stderr.write("(agent-context not initialized in cwd; run 'agent-context-init.mjs --yes' first.)\n");
+  process.stderr.write("cwd: " + cwd + "\n");
+  process.exit(1);
+}
+const ROOT = resolveProjectRoot();
 function resolveConfig() {
-  const cands = [
-    join(process.cwd(), 'agent-context.config.json'),
-    new URL('../agent-context.config.json', import.meta.url).pathname,
-  ];
-  for (const p of cands) if (existsSync(p)) return JSON.parse(readFileSync(p, 'utf8'));
+  const p = join(process.cwd(), 'agent-context.config.json');
+  if (existsSync(p)) return JSON.parse(readFileSync(p, 'utf8'));
   return { contextRoot: 'agent-context' };
 }
 const CONFIG = resolveConfig();
-const ROOT = (existsSync(join(process.cwd(), 'agent-context.config.json')) || existsSync(join(process.cwd(), CONFIG.contextRoot || 'agent-context')))
-  ? join(process.cwd(), CONFIG.contextRoot || 'agent-context')
-  : new URL(`../${CONFIG.contextRoot || 'agent-context'}`, import.meta.url).pathname;
 const INDEX_PATH = join(ROOT, 'index.json');
+
+const MIN_HIT_WEIGHT = CONFIG.search?.minHitWeight ?? 2;
 
 const LEVELS = CONFIG.hierarchy?.levels || {
   'post-it': { tokens: 15 }, memo: { tokens: 50 }, diary: { tokens: 200 },
@@ -103,8 +112,8 @@ function collect(entries, qTokens, opts, startRank, query) {
     try { const d=(Date.now()-new Date(e.updated).getTime())/86400000; recency = d<7?1:(d<30?0.8:0.5); } catch {}
     const score = hitScore*0.5 - levelDistance*0.1 + priorityScore*0.2 + recency*0.1;
     const estTokens = LEVELS[lev]?.tokens || 200;
-    return { entry:e, lev, levelDistance, hitScore, score, estTokens };
-  }).filter(s => s.hitScore > 0 || s.entry.feature === query?.toLowerCase() || opts.level);
+    return { entry:e, lev, levelDistance, hitScore, score, estTokens, w };
+  }).filter(s => s.w >= (opts.minWeight ?? MIN_HIT_WEIGHT) || s.entry.feature === query?.toLowerCase() || opts.level);
   scored.sort((a,b)=>b.score-a.score);
   const top = scored.slice(0, limit);
   const topTokens = top.reduce((s,x)=>s+x.estTokens,0);
@@ -115,6 +124,7 @@ function collect(entries, qTokens, opts, startRank, query) {
 async function search(query, opts={}) {
   let index; try { index = JSON.parse(readFileSync(INDEX_PATH,'utf8')); } catch { index = { entries: [] }; }
   const entries = index.entries || [];
+  opts.minWeight = opts.minWeight ?? CONFIG.search?.minHitWeight ?? 2;
   const assignedLevel = opts.level || heuristicLevel(query);
   const rawTokens = query.toLowerCase().split(/\s+/).filter(Boolean);
   const qTokens = expandTokens(rawTokens);
@@ -155,6 +165,7 @@ async function search(query, opts={}) {
     totalEntries: entries.length,
     evaluated: res.evaluated,
     hit: res.hit,
+    guidance: res.hit ? null : '관련 결과 없음 — 상위 레벨로 확장 검색 필요 (no related results; expand to a higher level)',
     top: res.top.map(t=>({ id:t.entry.id, title:t.entry.title, level:t.lev, feature:t.entry.feature, priority:t.entry.priority, estTokens:t.estTokens, path:t.entry.path, summary:t.entry.summary })),
     tokens: { top: res.topTokens, full: res.fullTokens, saving, avgPerQuery: res.top.length ? Math.round(res.topTokens/res.top.length) : 0 },
     note: `Hierarchical ${ORDER.join('→')} — miss expands to larger levels`,
@@ -217,6 +228,7 @@ for (let i=0;i<a.length;i++){ const v=a[i];
   else if(v==='--agent') out.agent=a[++i];
   else if(v==='--refs') out.refs=a[++i];
   else if(v==='--benchmark') out.benchmark=true;
+  else if(v==='--min-weight') out.minWeight=Number(a[++i]);
   else if(v==='--help'||v==='-h') out.help=true;
   else if(!v.startsWith('--') && out.query===null && !out.assign) out.query=v;
 }
@@ -253,12 +265,13 @@ if (__isMain && out.benchmark) {
   console.log(JSON.stringify({ benchmark:'live index, hierarchical vs full read', avgHitRate:(results.filter(r=>r.hit).length/results.length*100).toFixed(0)+'%', results }, null, 2));
   process.exit(0);
 }
-if (__isMain) { const res = await search(out.query, { level: out.level, limit: out.limit });
+if (__isMain) { const res = await search(out.query, { level: out.level, limit: out.limit, minWeight: out.minWeight });
 if (out.json) console.log(JSON.stringify(res, null, 2));
 else {
   console.log(`\n🔍 "${res.query}" → 휴리스틱 라우터: ${res.assignedLevel}${res.expandedTo?` (miss→확장: ${res.expandedTo})`:''} | 동의어 +${res.router.synonymExpanded} | semantic:${res.router.semantic}`);
   console.log(`   order: ${res.order.join(' → ')} | total:${res.totalEntries} evaluated:${res.evaluated} | hit:${res.hit?'✅':'❌'} | tokens top:${res.tokens.top} vs full:${res.tokens.full} saving:${res.tokens.saving}`);
   for (const t of res.top) console.log(`   - [${t.level} ${t.feature}] ${t.title} (p${t.priority}) → ${t.path}`);
+  if (!res.hit && res.guidance) console.log('   ⚠️ ' + res.guidance);
   console.log('');
 }
 }
