@@ -52,6 +52,19 @@ function readIndex() {
   try { return JSON.parse(readFileSync(INDEX_PATH, 'utf8')); } catch { return { entries: [] }; }
 }
 
+// Issue #10 fix: YAML-safe double-quoted scalar (prevents frontmatter injection
+// via --task/--session containing quotes or newlines).
+function yamlStr(s) {
+  return String(s).replace(/[\r\n]+/g, ' ').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+// Issue #10 fix: names become filenames — reject path separators / traversal
+// before any fs write (ENOENT crash / escape outside HANDOFF_DIR).
+function isSafeFileName(name) {
+  return typeof name === 'string' && name.length > 0 && name.length <= 128
+    && !/[\/\\\0]/.test(name) && !name.includes('..');
+}
+
 function recentEntries(n = 5) {
   const idx = readIndex();
   return (idx.entries || []).slice(0, n).map(e => ({
@@ -65,6 +78,10 @@ function save(args) {
     console.error('save requires --session NAME --task "..."');
     process.exit(1);
   }
+  if (!isSafeFileName(args.session)) {
+    console.error(`invalid session name '${args.session}' — must not contain '/', '\\', '..' or control characters`);
+    process.exit(1);
+  }
   const date = new Date().toISOString().slice(0, 10);
   const fname = `${date}--${args.session}.md`;
   const path = join(HANDOFF_DIR, fname);
@@ -75,7 +92,7 @@ function save(args) {
 id: handoff-${date.replace(/-/g, '')}-${Math.random().toString(36).slice(2, 10)}
 type: handoff
 level: diary
-title: "Session handoff — ${args.session}"
+title: "Session handoff — ${yamlStr(args.session)}"
 tags: [handoff, session]
 feature: global
 scope: global
@@ -84,7 +101,7 @@ created: ${new Date().toISOString()}
 updated: ${new Date().toISOString()}
 status: done
 priority: 5
-summary: "${args.task.slice(0, 120)}"
+summary: "${yamlStr(args.task.slice(0, 120))}"
 ---
 
 # Session Handoff — ${args.session}
@@ -139,15 +156,35 @@ function latestHandoff() {
 }
 
 function load(args) {
-  let path = args.file ? join(HANDOFF_DIR, args.file) : latestHandoff();
-  if (!path || !existsSync(path)) {
-    // fallback to CURRENT.md pointer
+  // Issue #10 fix: an EXPLICIT file arg that doesn't exist is an error (probably
+  // a typo) — erroring beats silently loading the wrong handoff via CURRENT.md.
+  if (args.file) {
+    if (!isSafeFileName(args.file)) {
+      return { error: `invalid handoff file name '${args.file}' — must not contain '/', '\\', '..' or control characters` };
+    }
+    const path = join(HANDOFF_DIR, args.file);
+    if (!existsSync(path)) {
+      return { error: `handoff not found: ${args.file}`, hint: "run 'list' to see available handoffs" };
+    }
+    return readHandoff(path);
+  }
+  const path = latestHandoff();
+  if (!path) {
+    // bare `load` with no handoffs yet → CURRENT.md pointer is a sane fallback
     if (existsSync(CURRENT_PATH)) {
       const cur = readFileSync(CURRENT_PATH, 'utf8');
       return { source: 'CURRENT.md', tokens: Math.ceil(cur.length / 4), content: cur };
     }
     return { error: 'no handoff found; run save first' };
   }
+  return readHandoff(path);
+}
+
+function readdirSyncSafe() {
+  try { return readdirSync(HANDOFF_DIR).filter(f => f.endsWith('.md')).sort().reverse(); } catch { return []; }
+}
+
+function readHandoff(path) {
   const src = readFileSync(path, 'utf8');
   const body = src.replace(/^---[\s\S]*?---\s*\n/, '');
   return {
@@ -183,7 +220,11 @@ Zero install beyond Node ≥18.`);
   process.exit(0);
 }
 if (ARGS.cmd === 'save') console.log(JSON.stringify(save(ARGS), null, 2));
-else if (ARGS.cmd === 'load') console.log(JSON.stringify(load(ARGS), null, 2));
+else if (ARGS.cmd === 'load') {
+  const res = load(ARGS);
+  if (res.error) { console.error(JSON.stringify(res, null, 2)); process.exit(1); }
+  console.log(JSON.stringify(res, null, 2));
+}
 else if (ARGS.cmd === 'list') console.log(JSON.stringify(list(), null, 2));
 else if (ARGS.cmd === 'current') {
   if (existsSync(CURRENT_PATH)) console.log(readFileSync(CURRENT_PATH, 'utf8'));

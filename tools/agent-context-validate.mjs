@@ -2,7 +2,7 @@
 // Path: tools/agent-context-validate.mjs
 // frontmatter lint — agent-context.config.json schema + required 10 검증
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, basename } from 'node:path';
 
 function resolveConfig(explicit) {
   const candidates = [
@@ -11,7 +11,7 @@ function resolveConfig(explicit) {
     new URL('../agent-context/agent-context.config.json', import.meta.url).pathname,
   ].filter(Boolean);
   for (const p of candidates) if (existsSync(p)) return JSON.parse(readFileSync(p,'utf8'));
-  return { contextRoot: 'agent-context', features: {}, types: ["note","memo","idea","learning","bug","decision","diary","code-history","todo"], agents: { allow: ["claude","codex","opencode","human","system"] } };
+  return { contextRoot: 'agent-context', features: {}, types: ["note","memo","idea","learning","bug","decision","diary","code-history","todo","issue","work-history","overall-flow","handoff"], agents: { allow: ["claude","codex","opencode","human","system"] } };
 }
 
 const configArgIndex = process.argv.indexOf('--config');
@@ -72,13 +72,26 @@ function walk(dir, out=[]) {
 const files = walk(ROOT);
 let errors = 0;
 const required = schema.required || ["id","type","title","tags","feature","agent","created","updated","status","summary"];
+// Issue #10 fix: CURRENT.md is a generated pointer file without frontmatter — exempt
+// from the no-frontmatter check. README.md already skipped.
+const EXEMPT_NO_FM = new Set(['CURRENT.md','README.md']);
 
 for (const f of files) {
   if (f.endsWith('README.md')) continue;
   const src = readFileSync(f,'utf8');
   const fm = parseFrontmatter(src);
-  if (!fm) continue;
-  if (!fm.id) continue;
+  // Issue #10 fix: files without frontmatter are not valid entries — FAIL (except
+  // CURRENT.md pointer). Previously silently passed, causing validator/indexer
+  // count mismatch.
+  if (!fm) {
+    if (!EXEMPT_NO_FM.has(basename(f))) {
+      console.error(`FAIL ${f}: no frontmatter`);
+      errors++;
+    }
+    continue;
+  }
+  // Issue #10 fix: removed `if (!fm.id) continue;` — missing id now caught by
+  // required-field check below (id is in required[]).
   for (const r of required) {
     if (!(r in fm) || String(fm[r]).trim()==='' ) { console.error(`FAIL ${f}: missing required '${r}'`); errors++; }
   }

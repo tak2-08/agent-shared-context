@@ -180,15 +180,23 @@ function benchmark(scales=[5,50,500], queriesPerScale=20) {
 }
 
 function printMarkdown(results) {
+  // Issue #10 fix: no hardcoded 3-scale indexing — works with any scales list
+  // (--scale 5 --queries 2 used to crash on results[1].scale).
+  if (!results.length) throw new Error('benchmark produced no results (empty --scale list?)');
+  const scalesStr = results.map(r => r.scale).join(' + ');
+  const mid = results[Math.floor(results.length / 2)];
+  const interp = results.map(r =>
+    `- **${r.scale} entries**: saving **${r.avgSaving}**, hitRate **${r.hitRate}**, avg latency ${r.avgLatency} — full \`~${r.fullTokens}tok\` vs top \`~${r.avgTopTokens}tok\``
+  ).join('\n');
   let md = `<!-- Path: BENCHMARK.md -->
 # Benchmark — Hierarchical Lightweight Search vs Full Read
 
-> **Objective, public-standard-like, critical, reproducible** — synthetic 5/50/500 scale, 20 queries, tokens = chars/4, hit = query tokens in title/tags/summary, latency = search vs est. full Read, no LLM.
+> **Objective, public-standard-like, critical, reproducible** — synthetic ${scalesStr} scale, queries per scale as run, tokens = chars/4, hit = query tokens in title/tags/summary, latency = search vs est. full Read, no LLM.
 
 ## Method (close to public standard)
 
-- **Dataset**: Synthetic ${results[0].scale} + ${results[1].scale} + ${results[2].scale} entries, distribution 40% post-it (15tok) 30% memo (50tok) 15% diary (200tok) 10% bookshelf (1000tok) 5% library (5000tok) — like cache workloads, not cherry-picked.
-- **Queries**: 20 mixed — single word (\`auth\`), phrase (\`auth jwt race\`), overall (\`overall flow\`), level-specific (\`post-it\`), work-history/idea/overall-flow fluid types.
+- **Dataset**: Synthetic ${scalesStr} entries, distribution 40% post-it (15tok) 30% memo (50tok) 15% diary (200tok) 10% bookshelf (1000tok) 5% library (5000tok) — like cache workloads, not cherry-picked.
+- **Queries**: mixed — single word (\`auth\`), phrase (\`auth jwt race\`), overall (\`overall flow\`), level-specific (\`post-it\`), work-history/idea/overall-flow fluid types.
 - **Metrics**: \`tokens top\` (hierarchical top 3), \`tokens full\` (all entries), \`saving\` (\`1 - top/full\`), \`hitRate\` (at least 1 hit), \`latency\` (ms, performance.now), \`tokensPerHit\`.
 - **Lightweight AI**: rule-based, 0 LLM calls, 0 tokens, hierarchical \`${LEVELS.join('→')}\` — like cache→HBM→DRAM→SSD, small→large, miss expands.
 - **Baseline**: Full Read = sum all levels tokens (like \`Glob+Read *.md\`).
@@ -197,21 +205,21 @@ function printMarkdown(results) {
 ## Results (run: \`node tools/benchmark.mjs\`)
 
 | scale | full tokens | avg top 3 tokens | avg saving | hitRate | avg latency (search) | est. full Read latency | tokens/hit |
-|---|---|---|---|---|---|---|` + results.map(r=>`
+|---|---|---|---|---|---|---|---|` + results.map(r=>`
 | ${r.scale} | ${r.fullTokens} | ${r.avgTopTokens} | ${r.avgSaving} | ${r.hitRate} | ${r.avgLatency} | ${r.fullLatencyEst} | ${r.tokensPerHit} |`).join('');
 
   md += `
 
 ### Interpretation (critical, not hype)
 
-- **5 entries** (current repo): \`full  ~${results[0].fullTokens}tok\` vs \`top ~${results[0].avgTopTokens}tok\` → saving **${results[0].avgSaving}** but absolute saving small — overhead of hierarchy not yet amortized. At small scale, full Read is also cheap; hierarchical still wins on **latency** (\`post-it\` first, no need to parse large).
-- **50 entries** (team, 1 month): saving **${results[1].avgSaving}** with **${results[1].hitRate}** hitRate — like cache 90% hit, 10% miss expands to larger levels. This is the sweet spot: 50×200 avg ~10k full vs ~${results[1].avgTopTokens} top.
-- **500 entries** (project, 6 months): saving **${results[2].avgSaving}** — like library scale, hierarchical is **99%** saving, but hitRate drops to **${results[2].hitRate}** if queries are too narrow (e.g., \`post-it\` query misses \`library\` content). **Tradeoff**: narrow query → high saving but lower hit, broad query → lower saving but higher hit. Our lightweight AI chooses starting level from query length to balance.
+${interp}
 
-### Sample per-query (scale 50)
+- At small scale, full Read is also cheap; hierarchical still wins on **latency** (\`post-it\` first, no need to parse large). At large scale, saving approaches **99%** but hitRate drops if queries are too narrow — narrow query → high saving but lower hit; the lightweight AI chooses starting level from query length to balance.
+
+### Sample per-query (scale ${mid.scale})
 
 | query | assignedLevel | top tokens | saving | hit | latency |
-|---|---|---|---|---|` + results[1].perQuery.map(p=>`
+|---|---|---|---|---|---|` + mid.perQuery.map(p=>`
 | ${p.query} | ${p.assignedLevel} | ${p.topTokens} | ${p.saving} | ${p.hit?'✅':'❌'} | ${p.latency} |`).join('');
 
   md += `
@@ -247,12 +255,12 @@ let scales = [5,50,500];
 let queries = 20;
 let json = false;
 for (let i=0;i<args.length;i++) {
-  if (args[i]==='--scale') scales = args[++i].split(',').map(Number);
-  else if (args[i]==='--queries') queries = Number(args[++i]);
+  if (args[i]==='--scale') scales = args[++i].split(',').map(Number).filter(n => Number.isFinite(n) && n > 0);
+  else if (args[i]==='--queries') queries = Math.max(1, Number(args[++i]) || 1);
   else if (args[i]==='--seed') { SEED = Number(args[++i]); rand = mulberry32(SEED); }
   else if (args[i]==='--json') json=true;
 }
-const results = benchmark(scales, queries);
+const results = benchmark(scales.length ? scales : [5,50,500], queries);
 if (json) console.log(JSON.stringify(results, null, 2));
 else {
   const md = printMarkdown(results);

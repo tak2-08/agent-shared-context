@@ -58,7 +58,8 @@
     "todo",
     "issue",
     "work-history",
-    "overall-flow"
+    "overall-flow",
+    "handoff"
   ],
   "schema": {
     "required": [

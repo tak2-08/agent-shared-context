@@ -4,7 +4,7 @@
 // 사용: node tools/agent-context-index.mjs [--check] [--init] [--config <path>] [--dry-run] [--to-sqlite]
 
 import { readdirSync, readFileSync, writeFileSync, existsSync, renameSync } from 'node:fs';
-import { join, relative, dirname } from 'node:path';
+import { join, relative, dirname, basename } from 'node:path';
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -170,7 +170,7 @@ if (ARGS.init) {
   const softLimits = CONFIG.storage?.softLimits || { softLimitChars: 200000, maxEntries: 1000 };
   const features = CONFIG.features || {};
   const edges = CONFIG.graph?.edges || [];
-  const types = CONFIG.types || ["note","memo","idea","learning","bug","decision","diary","code-history","todo"];
+  const types = CONFIG.types || ["note","memo","idea","learning","bug","decision","diary","code-history","todo","issue","work-history","overall-flow","handoff"];
   const featureEnum = Object.keys(features).length ? [...Object.keys(features), "global"] : ["global"];
   const agents = CONFIG.agents?.allow || ["claude","codex","opencode","human","system"];
 
@@ -285,11 +285,36 @@ const files = walk(ROOT);
 const entries = [];
 let totalChars = 0;
 
+// Issue #10 fix: lint gate — when CONFIG.lint.onIndexRegenerate is true, skip
+// entries that would fail validation (missing required fields, id pattern mismatch).
+// Also warn on files without frontmatter (except CURRENT.md/README.md) to surface
+// the validator/indexer count mismatch.
+const EXEMPT_NO_FM = new Set(['CURRENT.md','README.md']);
+const required = CONFIG.schema?.required || ["id","type","title","tags","feature","agent","created","updated","status","summary"];
+const idRe = new RegExp(CONFIG.schema?.idPattern || "^[a-z-]+-[0-9]{8}-[a-z0-9]{8}$");
+const gateOn = CONFIG.lint?.onIndexRegenerate === true;
+let skippedNoFm = 0, skippedLint = 0;
+
 for (const f of files) {
   const src = readFileSync(f, 'utf8');
   const fm = parseFrontmatter(src);
-  if (!fm || !fm.id) continue;
   const rel = relative(ROOT, f).replace(/\\/g, '/');
+  const base = basename(f);
+  if (!fm || !fm.id) {
+    if (!EXEMPT_NO_FM.has(base)) {
+      skippedNoFm++;
+      console.warn(`skip (no frontmatter/id): ${rel}`);
+    }
+    continue;
+  }
+  if (gateOn) {
+    const missing = required.filter(r => !(r in fm) || String(fm[r]).trim()==='');
+    if (missing.length || !idRe.test(String(fm.id))) {
+      skippedLint++;
+      console.warn(`skip (lint.onIndexRegenerate): ${rel}${missing.length?` missing ${missing.join(',')}`:''}${!idRe.test(String(fm.id))?' id pattern mismatch':''}`);
+      continue;
+    }
+  }
   const fmMatch = src.match(/---\s*\n[\s\S]*?\n---\s*\n/);
   const body = fmMatch ? src.slice(fmMatch.index + fmMatch[0].length) : src;
   const chars = src.length;

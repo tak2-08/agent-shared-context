@@ -42,8 +42,31 @@ function ensureDirs() {
 }
 ensureDirs();
 
+// Issue #10 fix: thread names become filenames (radio/threads/<name>.json).
+// Reject path separators / traversal / control chars up front — previously
+// `create-thread "a/b"` crashed ENOENT.
+function isValidName(name) {
+  return typeof name === 'string' && name.length > 0 && name.length <= 128
+    && !/[\/\\\0]/.test(name) && !name.includes('..');
+}
+const INVALID_NAME_MSG = n => `invalid thread name '${n}' — must be 1-128 chars, no '/', '\\', '..' or control characters`;
+
+// Issue #10 fix: validate mentions against sessions registry. Unknown mentions
+// are almost certainly typos — the message would never wake anyone.
+function validateMentions(mentions) {
+  const sessionsPath = join(ROOT, 'sessions/sessions.json');
+  if (!existsSync(sessionsPath)) return { valid: true }; // no registry → can't check
+  try {
+    const sessions = JSON.parse(readFileSync(sessionsPath, 'utf8')).sessions || [];
+    const known = new Set(sessions.map(s => s.name));
+    for (const m of mentions) if (!known.has(m)) return { valid: false, unknown: m, known: [...known] };
+    return { valid: true };
+  } catch { return { valid: true }; } // corrupt registry → don't block
+}
+
 export function createThread(name, participants = []) {
   // Like AgentRadio create_thread(name, participants) → returns identifier
+  if (!isValidName(name)) return { error: INVALID_NAME_MSG(name) };
   const path = join(THREADS_DIR, `${name}.json`);
   if (existsSync(path)) return { already: true, name, path: `radio/threads/${name}.json` };
   const thread = {
@@ -62,6 +85,7 @@ export function createThread(name, participants = []) {
 export function sendMessage(thread, content, opts = {}) {
   // Like AgentRadio send_message(thread, content, mentions) → appends and returns immediately whether anyone listening
   // May @-mention specific agents, triggers passive awareness if watcher is background
+  if (!isValidName(thread)) return { error: INVALID_NAME_MSG(thread) };
   const path = join(THREADS_DIR, `${thread}.json`);
   if (!existsSync(path)) return { error: `unknown thread '${thread}'. Use create-thread first.` };
   const data = JSON.parse(readFileSync(path, 'utf8'));
@@ -69,6 +93,11 @@ export function sendMessage(thread, content, opts = {}) {
   // Also handle @mentions in content like "@claude" or "@codex"
   const atMentions = [...content.matchAll(/@([a-z0-9_-]+)/gi)].map(m => m[1]);
   const allMentions = [...new Set([...mentions, ...atMentions])];
+  // Issue #10 fix: validate mentions against sessions registry
+  const mentionCheck = validateMentions(allMentions);
+  if (!mentionCheck.valid) {
+    return { error: `unknown mention '@${mentionCheck.unknown}' — not in sessions registry`, known: mentionCheck.known };
+  }
   const msg = {
     from: opts.from || process.env.AGENT_SESSION || 'local',
     content,
@@ -162,6 +191,12 @@ export function fivePhaseProtocol() {
 // CLI
 if (import.meta.url === `file://${process.argv[1]}`) {
   const cmd = process.argv[2];
+  // Issue #10 fix: helper to print result and exit 1 on {error} — previously
+  // unknown-thread/unknown-mention returned {error} with exit 0, invisible to CI.
+  function print(res) {
+    if (res && res.error) { console.error(JSON.stringify(res, null, 2)); process.exit(1); }
+    console.log(JSON.stringify(res, null, 2));
+  }
   if (!cmd || cmd === '--help' || cmd === '-h') {
     console.log(`Usage: node tools/agent-radio.mjs <command> [args]
 Commands (AgentRadio passive awareness, Apache 2.0, file-based):
@@ -185,7 +220,7 @@ Examples:
     const name = process.argv[3];
     const participants = process.argv.slice(4);
     if (!name) { console.error('create-thread requires <name>'); process.exit(1); }
-    console.log(JSON.stringify(createThread(name, participants), null, 2));
+    print(createThread(name, participants));
   } else if (cmd === 'send') {
     const thread = process.argv[3];
     const content = process.argv[4];
@@ -194,21 +229,21 @@ Examples:
     const mentions = mIdx !== -1 ? process.argv.slice(mIdx+1).filter(a => a.startsWith('@')).map(a => a.slice(1)) : [];
     const fromIdx = process.argv.indexOf('--from');
     const from = fromIdx !== -1 ? process.argv[fromIdx+1] : undefined;
-    console.log(JSON.stringify(sendMessage(thread, content, { mentions, from }), null, 2));
+    print(sendMessage(thread, content, { mentions, from }));
   } else if (cmd === 'wait') {
     const agent = process.argv[3];
     if (!agent) { console.error('wait requires <agent>'); process.exit(1); }
     const tIdx = process.argv.indexOf('--timeout');
     const timeout = tIdx !== -1 ? Number(process.argv[tIdx+1]) : 30000;
-    console.log(JSON.stringify(waitForMention(agent, timeout), null, 2));
+    print(waitForMention(agent, timeout));
   } else if (cmd === 'list-threads') {
-    console.log(JSON.stringify(listThreads(), null, 2));
+    print(listThreads());
   } else if (cmd === 'read-thread') {
     const name = process.argv[3];
     if (!name) { console.error('read-thread requires <name>'); process.exit(1); }
-    console.log(JSON.stringify(readThread(name), null, 2));
+    print(readThread(name));
   } else if (cmd === 'protocol') {
-    console.log(JSON.stringify(fivePhaseProtocol(), null, 2));
+    print(fivePhaseProtocol());
   } else {
     console.error(`unknown command ${cmd}`); process.exit(1);
   }
