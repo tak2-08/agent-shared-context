@@ -148,6 +148,15 @@ const HELP = `Usage: node tools/ac.mjs <command> [args]
   meeting list
   meeting minutes <meeting-id>
 
+메모리 명령 (Personal GitHub Memory):
+  memory search "query"          MEMORY.md + 일일 노트 검색
+  memory get [path]              정확한 발췌 읽기 (MEMORY.md, daily, daily/YYYY-MM-DD.md)
+  memory write [path] "content"  daily(기본) 또는 MEMORY.md에 추가
+  memory status                  저장소 상태 확인
+  memory dream [--days N]        최근 일일 노트에서 승격 후보 추출
+  memory init                    메모리 저장소 재초기화
+  memory repo                    현재 메모리 레포 URL 확인
+
 기록 명령 (결과 중심 — 도구 로그 아님):
   issue    --title "..." [--feature F] [--agent A] [--summary "..."] [--refs a,b]
   learning --title "..." [--cause C] [--fix F2] [--lesson L] [동일 옵션]
@@ -171,6 +180,10 @@ switch (cmd) {
   case 'validate':run('agent-context-validate.mjs', rest); break;
   case 'meeting': {
     run('agent-meeting.mjs', args.slice(1));
+    break;
+  }
+  case 'memory': {
+    run('agent-memory.mjs', args.slice(1));
     break;
   }
   case 'issue':

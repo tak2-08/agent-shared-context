@@ -172,6 +172,14 @@
         "action-item",
         "decision"
       ]
+    },
+    "memory": {
+      "enabled": true,
+      "description": "Per-user GitHub-backed long-term memory. Auto-creates private repo on first use.",
+      "repo": null,
+      "localPath": null,
+      "autoCreate": true,
+      "syncOnWrite": true
     }
   },
   "typesFluid": true,
@@ -297,5 +305,9 @@
         "payment"
       ]
     }
+  },
+  "memory": {
+    "repo": "tak2-08/agent-shared-context-memory",
+    "localPath": "/home/node/.cache/agent-memory/repo"
   }
 }
