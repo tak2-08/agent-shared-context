@@ -46,7 +46,13 @@ function resolveRoot() {
   const cwd = process.cwd();
   if (existsSync(join(cwd, 'agent-context.config.json')) || existsSync(join(cwd, 'agent-context')))
     return join(cwd, 'agent-context');
-  return new URL('../agent-context', import.meta.url).pathname; // source-repo fallback
+  // Issue #12 fix: never silently fall back to the source repo — that pollutes
+  // the package install (e.g. npx cache) with user data. Require an initialized
+  // project in cwd instead.
+  process.stderr.write("agent-context가 초기화되지 않았습니다. 먼저 'agent-context-init.mjs --yes' 를 실행하세요.\n");
+  process.stderr.write("(agent-context not initialized in cwd; run 'agent-context-init.mjs --yes' first.)\n");
+  process.stderr.write("cwd: " + cwd + "\n");
+  process.exit(1);
 }
 function pluralDir(type) {
   const map = { issue: 'bugs', bug: 'bugs', learning: 'learnings', idea: 'ideas', note: 'notes',
