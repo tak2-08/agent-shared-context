@@ -207,6 +207,16 @@ keywords:
 
 - **파일 기반**: no server, no Docker, no binary — `agent-shared-context`는 범용 `file` inbox/threads로 동작. 상세는 `docs/radio.md` `docs/sessions.md` `REFERENCES.md`.
 
+## 🤝 AgentRadio와 함께 쓰기 (강력 추천)
+
+`agent-shared-context`는 **[AgentRadio](https://github.com/tak2-08/AgentRadio)**(수동적 인지 멀티에이전트 협업 프로토콜, `arXiv:2607.28430`)와 **아주 잘 맞물린다**:
+
+- **지식 저장소 ↔ 협업 레이어**: `agent-shared-context`를 *구조화된 공유 지식 DB*(`index/graph/features.json` + `*.md`)로, AgentRadio를 *실시간 협업/오케스트레이션 레이어*(팀장/대리/팀원 릴레이, `/토론`, 라디오 버스)로 쓰면, 에이전트는 **공유 기억**과 **조율된 멀티에이전트 실행**을 동시에 갖게 된다.
+- **범용 메모리까지**: AgentRadio의 `memory-core` 플러그인은 GitHub 저장소 `tak2-08/memory`를 모든 세션/환경(OpenCode/Claude Code/Codex)이 공유하는 장기 기억으로 쓴다 — `agent-shared-context`(프로젝트 지식) + `tak2-08/memory`(횡단 장기 기억) 조합으로 완결된 협업 스택이 된다.
+- **같은 철학**: 둘 다 "서버 없이 파일 기반으로" 동작한다. `agent-shared-context`의 `tools/agent-radio.mjs`는 AgentRadio의 passive-awareness를 file-based로 재구현했다(서버 미포함).
+
+AgentRadio README의 "OpenCode / Claude Code / Codex Integration" 섹션도 이 저장소를 협업 대상으로 가리킨다.
+
 ## Hierarchy — 유동적 계층 (cache → library, AI 가속기에서 영감)
 
 **고정 `type: bug|idea` 9개가 아닌, 유동적·능동적 분할** — `issue|work-history|idea|overall-flow` 등 자유 타입 (`schema.json: type pattern ^[a-z0-9-]+$`, `typesFluid: true`) + 5 레벨 `post-it(15tok, L1 cache)` `memo(50tok, HBM)` `diary(200tok, DRAM)` `bookshelf(1000tok, SSD)` `library(5000tok, cold)` — 검색엔진 `(&AI)[포스트잇|메모지|일기|책장|도서관]`:
