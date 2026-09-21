@@ -307,7 +307,7 @@
     }
   },
   "memory": {
-    "repo": "tak2-08/agent-shared-context-memory",
-    "localPath": "/home/node/.cache/agent-memory/repo"
+    "repo": null,
+    "localPath": null
   }
 }
