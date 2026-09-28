@@ -148,8 +148,8 @@ const HELP = `Usage: node tools/ac.mjs <command> [args]
   meeting list
   meeting minutes <meeting-id>
 
-메모리 명령 (Personal GitHub Memory):
-  memory search "query"          MEMORY.md + 일일 노트 검색
+메모리 명령 (Personal GitHub Memory) — MEMORY.md 항상 최우선:
+  memory search "query"          MEMORY.md + 일일 노트 검색 (MEMORY.md 적중이 먼저 반환됨, 충돌 시 MEMORY.md 승리)
   memory get [path]              정확한 발췌 읽기 (MEMORY.md, daily, daily/YYYY-MM-DD.md)
   memory write [path] "content"  daily(기본) 또는 MEMORY.md에 추가
   memory status                  저장소 상태 확인

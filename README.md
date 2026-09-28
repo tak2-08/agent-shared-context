@@ -253,6 +253,14 @@ node tools/ac.mjs memory dream --days 7  # REMEMBER/DECISION 등 승격 후보 �
 
 모든 데이터는 **유저 개인 repo**에만 저장 (로컬 캐시: `~/.cache/agent-memory/repo`). 설정: `agent-context.config.json` → `live.memory`.
 
+### MEMORY.md 우선순위 (v4)
+
+**`MEMORY.md`가 항상 최우선**이다 — opencode의 `memory-core.ts`와 동일한 계약:
+
+1. **로드 순서**: `memory search`는 **MEMORY.md 적중을 항상 daily 적중보다 먼저 반환**한다 (tiered fill). 결과 항목에 `source`("MEMORY.md" | "daily") · `priority`(1 | 0) · `file`(파일별 줄 번호) 필드가 추가된다 — 기존 필드(`line`/`text`/`context`)는 그대로.
+2. **충돌 해결**: **MEMORY.md가 daily notes나 캐시와 다르면 MEMORY.md를 따르고, 충돌을 명시적으로 기록한다.** Daily의 새 한 줄이 curated 결정을 조용히 뒤집지 않는다. 검색 응답의 `priority` 필드에 이 규칙이 실려 나온다.
+3. **하위 호환**: 응답 형태는 변경 없음(추가 필드만) — 기존 워크플로(`search`/`get`/`write`/`status`/`dream`)는 그대로 동작한다.
+
 ## 🤝 AgentRadio와 함께 쓰기 (강력 추천)
 
 `agent-shared-context`는 **[AgentRadio](https://github.com/tak2-08/AgentRadio)**(수동적 인지 멀티에이전트 협업 프로토콜, `arXiv:2607.28430`)와 **아주 잘 맞물린다**:
