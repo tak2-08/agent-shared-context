@@ -229,6 +229,12 @@ function gitIdentityArgs() {
 }
 
 // ── Memory operations ──────────────────────────────────────────────────────────
+// MEMORY.md-first priority contract (v4, mirrors opencode memory-core.ts):
+//   1. memorySearch returns MEMORY.md hits before daily-note hits (tiered fill).
+//   2. Result items gain additive source ("MEMORY.md" | "daily"), priority (1 | 0),
+//      and file (per-file resolvable line) fields — existing fields unchanged.
+//   3. Conflict rule: when MEMORY.md disagrees with daily notes or cache, MEMORY.md
+//      wins — the search response carries the rule so callers interpret correctly.
 function readMemoryFile(path) {
   if (!existsSync(path)) return '';
   return readFileSync(path, 'utf8');
@@ -248,36 +254,63 @@ export async function memorySearch(query, opts = {}) {
   const { repo, localPath, error } = await ensureMemoryRepo();
   if (error) return { error, results: [] };
   pullMemory(localPath);
-  
+
   const memoryMd = readMemoryFile(join(localPath, 'MEMORY.md'));
-  const dailyFiles = existsSync(join(localPath, 'daily')) 
-    ? readdirSync(join(localPath, 'daily')).filter(f => f.endsWith('.md')).sort().reverse() 
+  const dailyFiles = existsSync(join(localPath, 'daily'))
+    ? readdirSync(join(localPath, 'daily')).filter(f => f.endsWith('.md')).sort().reverse()
     : [];
-  
-  // Simple keyword search (can be enhanced with FTS later)
-  const allText = memoryMd + '\n' + dailyFiles.slice(0, opts.maxDays || 30).map(f => 
-    readMemoryFile(join(localPath, 'daily', f))
-  ).join('\n');
-  
-  const lines = allText.split('\n');
-  const results = [];
+
+  // MEMORY.md-first: search curated MEMORY.md and daily notes separately, then fill
+  // results from the MEMORY.md tier first. (The old single-concatenation walk could
+  // not attribute a hit's line to any real file for daily notes; per-file `line` +
+  // `file` fixes that without changing the old fields.)
+  const maxResults = opts.maxResults || 10;
   const queryLower = query.toLowerCase();
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].toLowerCase().includes(queryLower)) {
-      results.push({ line: i + 1, text: lines[i].slice(0, 200), context: lines.slice(Math.max(0, i-2), i+3).join('\n') });
-      if (results.length >= (opts.maxResults || 10)) break;
+  const searchLines = (text, file, source, priority) => {
+    const lines = text.split('\n');
+    const out = [];
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].toLowerCase().includes(queryLower)) {
+        out.push({
+          line: i + 1,
+          file,
+          text: lines[i].slice(0, 200),
+          context: lines.slice(Math.max(0, i - 2), i + 3).join('\n'),
+          source,
+          priority,
+        });
+        if (out.length >= maxResults) break;
+      }
     }
-  }
-  return { repo, results, totalLines: lines.length };
+    return out;
+  };
+
+  const memResults = searchLines(memoryMd, 'MEMORY.md', 'MEMORY.md', 1).slice(0, maxResults);
+  const dailyQuota = maxResults - memResults.length;
+  const dailyResults = dailyQuota > 0
+    ? dailyFiles.slice(0, opts.maxDays || 30)
+        .flatMap(f => searchLines(readMemoryFile(join(localPath, 'daily', f)), `daily/${f}`, 'daily', 0))
+        .slice(0, dailyQuota)
+    : [];
+
+  return {
+    repo,
+    results: [...memResults, ...dailyResults],
+    totalLines: (memoryMd + '\n' + dailyFiles.slice(0, opts.maxDays || 30).map(f =>
+      readMemoryFile(join(localPath, 'daily', f))
+    ).join('\n')).split('\n').length,
+    priority: 'MEMORY.md first — MEMORY.md hits are returned before daily hits; on conflict MEMORY.md wins',
+  };
 }
 
 export async function memoryGet(path, opts = {}) {
   const { repo, localPath, error } = await ensureMemoryRepo();
   if (error) return { error };
   pullMemory(localPath);
-  
+
   let fullPath;
   if (path === 'MEMORY.md' || path === 'memory') {
+    // MEMORY.md-first: the curated file is always the explicit target for these aliases.
     fullPath = join(localPath, 'MEMORY.md');
   } else if (path === 'daily' || path === 'memory/daily' || path === today()) {
     fullPath = join(localPath, 'daily', `${today()}.md`);
@@ -286,13 +319,14 @@ export async function memoryGet(path, opts = {}) {
   } else {
     fullPath = join(localPath, path);
   }
-  
+
   if (!existsSync(fullPath)) return { error: 'not found', path: fullPath };
-  
+
   const lines = readFileSync(fullPath, 'utf8').split('\n');
   const from = (opts.from || 1) - 1;
   const to = from + (opts.lines || 80);
-  return { repo, path: fullPath, lines: lines.slice(from, to), totalLines: lines.length };
+  return { repo, path: fullPath, lines: lines.slice(from, to), totalLines: lines.length,
+    priority: 'MEMORY.md is authoritative — on conflict with daily notes, MEMORY.md wins' };
 }
 
 export async function memoryWrite(path, content, mode = 'append') {
@@ -324,6 +358,7 @@ export async function memoryStatus() {
   const visibility = repoExists(repo).visibility || null;
 
   return { repo, localPath, memoryMdBytes: memSize, dailyFiles: dailyCount, lastSync: now(),
+    priority: 'MEMORY.md first (v4) — MEMORY.md loads before daily notes and wins conflicts',
     ghUser: auth.username || null, ghAuth: auth.ok, repoExists: true, repoVisibility: visibility, syncEnabled: true };
 }
 
@@ -359,9 +394,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const HELP = `Usage: node tools/agent-memory.mjs <command> [args]
 
 Per-user GitHub-backed memory (auto-creates your private repo on first use).
+Priority: MEMORY.md is ALWAYS first — curated MEMORY.md hits are returned before
+daily-note hits, and on conflict MEMORY.md wins (daily never silently overrides).
 
 Commands:
-  search "query"           Search MEMORY.md + daily notes
+  search "query"           Search MEMORY.md + daily notes (MEMORY.md hits first)
   get [path] [--from N] [--lines N]  Read exact excerpt (path: MEMORY.md, daily, or daily/YYYY-MM-DD.md)
   write [path] "content"   Append to daily (default) or MEMORY.md (path=MEMORY.md)
   status                   Show repo, local path, sizes
