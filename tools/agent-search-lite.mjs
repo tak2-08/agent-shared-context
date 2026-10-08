@@ -9,6 +9,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
+import { randomBytes } from 'node:crypto';
 
 // Issue #14 fix: require an initialized project in cwd; never silently fall back
 // to the source repo.
@@ -182,30 +183,48 @@ function assignLevel(content, priority=3, affects=[]) {
   return 'library';
 }
 function saveEntry(o) {
+  // All frontmatter is user-supplied. Reject path components and escape YAML
+  // scalars rather than interpolating raw CLI input into a file name or header.
+  const type = String(o.type || '');
+  const agent = String(o.agent || '');
+  const feature = String(o.feature || '');
+  if (!/^[a-z][a-z0-9-]*$/.test(type)) throw new Error('invalid --type');
+  if (!/^[a-z][a-z0-9-]*$/.test(agent)) throw new Error('invalid --agent');
+  if (!/^[a-z][a-z0-9-]*$/.test(feature)) throw new Error('invalid --feature');
+  if (!Number.isInteger(o.priority) || o.priority < 1 || o.priority > 5)
+    throw new Error('invalid --priority (1-5)');
+  const q = value => '"' + String(value).replace(/[\\r\\n]+/g, ' ')
+    .replace(/\\\\/g, '\\\\').replace(/"/g, '\\"') + '"';
   const dirMap = { issue:'bugs', bug:'bugs', learning:'learnings', idea:'ideas', note:'notes',
     decision:'decisions', diary:'diary', todo:'todos', memo:'notes', 'work-history':'code-history', 'overall-flow':'notes' };
-  const dir = join(ROOT, dirMap[o.type]||'notes');
-  mkdirSync(dir,{recursive:true});
-  const date = new Date().toISOString().slice(0,10);
-  const fname = `${date}-${String(o.title||o.content).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)}--${o.agent}.md`;
-  const path = join(dir,fname);
-  const refs = o.refs ? String(o.refs).split(',').map(s=>s.trim()).filter(Boolean) : [];
+  const folder = dirMap[type] || 'notes';
+  const dir = join(ROOT, folder);
+  mkdirSync(dir, { recursive:true });
+  const timestamp = new Date().toISOString();
+  const date = timestamp.slice(0,10);
+  const unique = randomBytes(4).toString('hex');
+  const label = String(o.title || o.content).toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0,40) || 'entry';
+  const fname = `${date}-${label}--${agent}-${unique}.md`;
+  const path = join(dir, fname);
+  const refs = o.refs ? String(o.refs).split(',').map(v=>v.trim()).filter(Boolean) : [];
   const md = [
-    `<!-- Path: agent-context/${dirMap[o.type]||'notes'}/${fname} -->`, '---',
-    `id: ${o.type}-${date.replace(/-/g,'')}-${Math.random().toString(16).slice(2,10)}`,
-    `type: ${o.type}`, `level: ${o.computedLevel}`,
-    `title: "${String(o.title||o.content).slice(0,80)}"`,
-    `tags: [${o.type}, ${o.feature}]`, `feature: ${o.feature}`, `scope: global`, `agent: ${o.agent}`,
-    `created: ${new Date().toISOString()}`, `updated: ${new Date().toISOString()}`,
-    `status: done`, `priority: ${o.priority}`,
-    `summary: "${String(o.content).slice(0,180)}"`,
-    ...(refs.length?['refs:',...refs.map(r=>`  - "${r}"`)]:[]),
-    '---','',
-    `## 결과\n\n${o.content}\n`,
-    `\n<!-- outcome-based: 결론만 저장, 검증은 refs -->`,
-  ].join('\n')+'\n';
-  writeFileSync(path, md,'utf8');
-  spawnSync(process.execPath, [new URL('./agent-context-index.mjs', import.meta.url).pathname], { stdio:'inherit' });
+    `<!-- Path: agent-context/${folder}/${fname} -->`, '---',
+    `id: ${type}-${date.replace(/-/g,'')}-${unique}`,
+    `type: ${type}`, `level: ${o.computedLevel}`,
+    `title: ${q(String(o.title || o.content).slice(0,80))}`,
+    `tags: [${type}, ${feature}]`, `feature: ${feature}`, 'scope: global', `agent: ${q(agent)}`,
+    `created: ${timestamp}`, `updated: ${timestamp}`,
+    'status: done', `priority: ${o.priority}`,
+    `summary: ${q(String(o.content).slice(0,180))}`,
+    ...(refs.length ? ['refs:', ...refs.map(v => `  - ${q(v)}`)] : []),
+    '---', '', `## 결과\\n\\n${o.content}\\n`,
+    '\\n<!-- outcome-based: 결론만 저장, 검증은 refs -->',
+  ].join('\\n') + '\\n';
+  // Never truncate an existing record, even if a same-title writer races us.
+  writeFileSync(path, md, { encoding:'utf8', flag:'wx' });
+  const result = spawnSync(process.execPath, [new URL('./agent-context-index.mjs', import.meta.url).pathname], { stdio:'inherit' });
+  if (result.status !== 0) throw new Error('index regeneration failed; entry saved at ' + path);
   return { saved:true, path, level:o.computedLevel, tokens: LEVELS[o.computedLevel]?.tokens };
 }
 
