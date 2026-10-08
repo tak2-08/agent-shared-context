@@ -193,8 +193,8 @@ function saveEntry(o) {
   if (!/^[a-z][a-z0-9-]*$/.test(feature)) throw new Error('invalid --feature');
   if (!Number.isInteger(o.priority) || o.priority < 1 || o.priority > 5)
     throw new Error('invalid --priority (1-5)');
-  const q = value => '"' + String(value).replace(/[\\r\\n]+/g, ' ')
-    .replace(/\\\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+  const q = value => '"' + String(value).replace(/[\r\n]+/g, ' ')
+    .replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
   const dirMap = { issue:'bugs', bug:'bugs', learning:'learnings', idea:'ideas', note:'notes',
     decision:'decisions', diary:'diary', todo:'todos', memo:'notes', 'work-history':'code-history', 'overall-flow':'notes' };
   const folder = dirMap[type] || 'notes';
@@ -218,9 +218,9 @@ function saveEntry(o) {
     'status: done', `priority: ${o.priority}`,
     `summary: ${q(String(o.content).slice(0,180))}`,
     ...(refs.length ? ['refs:', ...refs.map(v => `  - ${q(v)}`)] : []),
-    '---', '', `## 결과\\n\\n${o.content}\\n`,
-    '\\n<!-- outcome-based: 결론만 저장, 검증은 refs -->',
-  ].join('\\n') + '\\n';
+    '---', '', `## 결과\n\n${o.content}\n`,
+    '\n<!-- outcome-based: 결론만 저장, 검증은 refs -->',
+  ].join('\n') + '\n';
   // Never truncate an existing record, even if a same-title writer races us.
   writeFileSync(path, md, { encoding:'utf8', flag:'wx' });
   const result = spawnSync(process.execPath, [new URL('./agent-context-index.mjs', import.meta.url).pathname], { stdio:'inherit' });
