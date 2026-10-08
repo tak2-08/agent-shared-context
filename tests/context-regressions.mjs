@@ -23,6 +23,17 @@ function cli(tool, ...args) {
 }
 
 try {
+  // Indexing outside an initialized project must not mutate package templates.
+  const empty = mkdtempSync(join(tmpdir(), 'ac-uninitialized-'));
+  try {
+    const uninitialized = spawnSync(process.execPath, [join(tools, 'agent-context-index.mjs'), '--dry-run'],
+      { cwd: empty, encoding: 'utf8', timeout: 15000 });
+    assert.notEqual(uninitialized.status, 0, 'uninitialized indexer unexpectedly succeeded');
+    assert.match(uninitialized.stderr, /not initialized/);
+  } finally {
+    rmSync(empty, { recursive: true, force: true });
+  }
+
   cli('agent-context-init.mjs', '--yes', '--project', 'regression');
 
   // Same day/title/agent must never overwrite a previously saved memory.
