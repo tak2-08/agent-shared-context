@@ -25,7 +25,7 @@
     "type": {
       "type": "string",
       "pattern": "^[a-z0-9-]+$",
-      "description": "유동적 타입 — issue|work-history|idea|overall-flow 등 자유, 고정 enum 아님. 기존 note/memo/idea/learning/bug/decision/diary/code-history/todo 등도 호환"
+      "description": "유동적 타입 — 자유 문자열 (typesFluid)"
     },
     "level": {
       "type": "string",
@@ -56,7 +56,7 @@
     "feature": {
       "type": "string",
       "pattern": "^[a-z0-9-_]+$",
-      "description": "유동적 feature — graph.json/features.json 키와 연결되나 자유롭게 확장 가능, 고정 enum 아님"
+      "description": "유동적 feature — graph/features 키와 연결, 자유 확장"
     },
     "scope": {
       "type": "string",
