@@ -8,16 +8,16 @@
     "soft_limit_chars": 200000,
     "max_entries": 1000,
     "should_compress": false,
-    "total_chars": 5379,
-    "total_entries": 8
+    "total_chars": 6439,
+    "total_entries": 9
   },
   "counts": {
     "note": 1,
     "learning": 1,
     "handoff": 1,
-    "meeting": 4,
+    "meeting": 5,
     "issue": 1,
-    "total": 8
+    "total": 9
   },
   "entries": [
     {
@@ -180,6 +180,29 @@
       "related": [],
       "affects": [],
       "chars": 697
+    },
+    {
+      "id": "meeting-20260827-9z2jlw00",
+      "type": "meeting",
+      "level": "diary",
+      "title": "Test Meeting",
+      "tags": [
+        "meeting",
+        "planning"
+      ],
+      "feature": "global",
+      "scope": "global",
+      "agent": "alice",
+      "created": "2026-08-27T07:17:38.178Z",
+      "updated": "2026-08-27T07:18:16.611Z",
+      "status": "done",
+      "priority": 4,
+      "summary": "Meeting: 계획 수립 - Test Meeting (4 participants)",
+      "preview": "Meeting: 계획 수립 - Test Meeting (4 participants)",
+      "path": "meetings/minutes/2026-08-27-test-meeting--mtg-20260827-9z2jlw.md",
+      "related": [],
+      "affects": [],
+      "chars": 1060
     },
     {
       "id": "issue-20260826-b48a3b55",
