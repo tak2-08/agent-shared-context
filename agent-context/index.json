@@ -8,16 +8,16 @@
     "soft_limit_chars": 200000,
     "max_entries": 1000,
     "should_compress": false,
-    "total_chars": 6439,
-    "total_entries": 9
+    "total_chars": 7918,
+    "total_entries": 10
   },
   "counts": {
     "note": 1,
     "learning": 1,
     "handoff": 1,
-    "meeting": 5,
+    "meeting": 6,
     "issue": 1,
-    "total": 9
+    "total": 10
   },
   "entries": [
     {
@@ -157,6 +157,29 @@
       "related": [],
       "affects": [],
       "chars": 747
+    },
+    {
+      "id": "meeting-20260827-8563d600",
+      "type": "meeting",
+      "level": "diary",
+      "title": "Auth Refactor",
+      "tags": [
+        "meeting",
+        "planning"
+      ],
+      "feature": "global",
+      "scope": "global",
+      "agent": "radio-assembler",
+      "created": "2026-08-27T07:55:29.660Z",
+      "updated": "2026-08-27T07:55:59.947Z",
+      "status": "done",
+      "priority": 4,
+      "summary": "Meeting: 계획 수립 - Auth Refactor (4 participants)",
+      "preview": "Meeting: 계획 수립 - Auth Refactor (4 participants)",
+      "path": "meetings/minutes/2026-08-27-auth-refactor--mtg-20260827-8563d6.md",
+      "related": [],
+      "affects": [],
+      "chars": 1479
     },
     {
       "id": "meeting-20260827-92296c17",
