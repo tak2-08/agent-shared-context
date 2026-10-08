@@ -79,10 +79,14 @@ const CONTEXT_ROOT = CONFIG.contextRoot || 'agent-context';
 const cwdHasContext =
   existsSync(join(process.cwd(), 'agent-context.config.json')) ||
   existsSync(join(process.cwd(), CONTEXT_ROOT));
-const ROOT = cwdHasContext
-  ? join(process.cwd(), CONTEXT_ROOT)
-  : new URL(`../${CONTEXT_ROOT}`, import.meta.url).pathname;
-const ROOT_SOURCE = cwdHasContext ? 'process.cwd()' : 'script-relative (source repo fallback)';
+// Never regenerate into the npm package's bundled example when invoked
+// from an uninitialized consumer project.
+if (!cwdHasContext) {
+  console.error('agent-context not initialized in cwd; run agent-context init first');
+  process.exit(1);
+}
+const ROOT = join(process.cwd(), CONTEXT_ROOT);
+const ROOT_SOURCE = 'process.cwd()';
 const INDEX_PATH = join(ROOT, 'index.json');
 const GRAPH_PATH = join(ROOT, 'graph.json');
 const FEATURES_PATH = join(ROOT, 'features.json');

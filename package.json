@@ -2,21 +2,43 @@
   "name": "agent-shared-context",
   "version": "0.1.0",
   "description": "Token-saving shared context DB for inter-agent collaboration — L1 index (50 tok/entry) → L2 graph → L3 md. Git-synced, 82% cheaper. Agents share context via git.",
-  "keywords": ["agent-shared-context", "agent-context", "inter-agent", "ai-agents", "claude-code", "token-optimization", "knowledge-base", "frontmatter", "git-based", "llm-memory", "multi-agent"],
+  "keywords": [
+    "agent-shared-context",
+    "agent-context",
+    "inter-agent",
+    "ai-agents",
+    "claude-code",
+    "token-optimization",
+    "knowledge-base",
+    "frontmatter",
+    "git-based",
+    "llm-memory",
+    "multi-agent"
+  ],
   "license": "MIT",
   "type": "module",
   "bin": {
     "agent-shared-context": "./tools/agent-context-init.mjs",
     "agent-context": "./tools/agent-context-init.mjs"
   },
-  "files": ["agent-context/", "tools/", "templates/", "docs/", ".claude/skills/", "skills/", "REFERENCES.md", "AGENT.md"],
+  "files": [
+    "agent-context/",
+    "tools/",
+    "templates/",
+    "docs/",
+    ".claude/skills/",
+    "skills/",
+    "REFERENCES.md",
+    "AGENT.md"
+  ],
   "engines": {
     "node": ">=18"
   },
   "scripts": {
     "check": "node tools/agent-context-index.mjs --check && node tools/agent-context-validate.mjs",
     "index": "node tools/agent-context-index.mjs",
-    "init": "node tools/agent-context-init.mjs"
+    "init": "node tools/agent-context-init.mjs",
+    "test": "node tests/context-regressions.mjs"
   },
   "repository": {
     "type": "git",

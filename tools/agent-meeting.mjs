@@ -51,9 +51,15 @@ const MEETING_TYPES = {
 const ROLES = ['moderator', 'presenter', 'participant', 'observer'];
 
 // ── Meeting state helpers ──────────────────────────────────────────────────────
-function meetingPath(id) { return join(MEETINGS_DIR, `${id}.json`); }
-function transcriptPath(id) { return join(TRANSCRIPTS_DIR, `${id}.jsonl`); }
-function minutesPath(id) { return join(MINUTES_DIR, `${id}.md`); }
+// Accept historical mtg-* records, but never treat a CLI ID as a path.
+function validateMeetingId(id) {
+  if (!/^(?:meeting|mtg)-[0-9]{8}-[a-z0-9]{6,12}$/.test(String(id)))
+    throw new Error('invalid meeting ID');
+  return id;
+}
+function meetingPath(id) { return join(MEETINGS_DIR, `${validateMeetingId(id)}.json`); }
+function transcriptPath(id) { return join(TRANSCRIPTS_DIR, `${validateMeetingId(id)}.jsonl`); }
+function minutesPath(id) { return join(MINUTES_DIR, `${validateMeetingId(id)}.md`); }
 
 function readMeeting(id) {
   const p = meetingPath(id);
@@ -121,7 +127,7 @@ function joinMeeting(id, agent, role = 'participant') {
 function startMeeting(id, agent) {
   const m = readMeeting(id);
   if (!m) return { error: `meeting not found: ${id}` };
-  if (m.moderator !== agent && !m.participants.includes(agent)) return { error: 'not authorized' };
+  if (m.moderator !== agent) return { error: 'only moderator can start meeting' };
   if (m.status !== 'open') return { error: `already ${m.status}` };
   m.status = 'in-progress';
   m.started_at = now();
@@ -238,7 +244,7 @@ function saveMeetingEntry(m, transcript) {
   const entryDir = join(ROOT, 'notes');
   mkdirSync(entryDir, { recursive: true });
   const date = today();
-  const fname = `${date}-${slug(m.title)}--meeting.md`;
+  const fname = `${date}-${slug(m.title)}--${validateMeetingId(m.id)}.md`;
   const path = join(entryDir, fname);
   const content = `회의: ${m.title} (${MEETING_TYPES[m.type].ko})
 참석자: ${m.participants.join(', ')}

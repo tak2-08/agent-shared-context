@@ -23,7 +23,7 @@ jobs:
       - name: Index drift check
         run: node tools/agent-context-index.mjs --check
       - name: Config scaffolding check
-        run: node tools/agent-context-index.mjs --init --check 2>&1 | head -20
+        run: node tools/agent-context-index.mjs --init --check
       - name: Live sessions check (Claude reverse-engineered)
         run: |
           node --check tools/agent-sessions.mjs
@@ -34,6 +34,11 @@ jobs:
           node --check tools/agent-radio.mjs
           node tools/agent-radio.mjs list-threads
           node tools/agent-radio.mjs protocol
+      - name: Node syntax check
+        run: |
+          find tools tests -name '*.mjs' -print0 | xargs -0 -n1 node --check
+      - name: CLI regression suite
+        run: npm test
       - name: E2E workflow (init→write→validate→search→handoff)
         run: node tools/e2e-workflow.mjs
       - name: Skill check
